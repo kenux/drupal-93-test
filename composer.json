@@ -53,7 +53,8 @@
         "allow-plugins": {
             "composer/installers": true,
             "drupal/core-project-message": true,
-            "drupal/core-vendor-hardening": true
+            "drupal/core-vendor-hardening": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     },
     "extra": {
