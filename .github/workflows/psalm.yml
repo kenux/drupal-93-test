@@ -30,7 +30,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Update composer
-        run: composer update --lock
+        run: |
+          composer update
+          composer update --lock
         continue-on-error: true
 
       - name: Psalm Security Scan
