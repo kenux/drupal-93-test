@@ -30,8 +30,6 @@ class TextFieldTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->plugin = new TextField([], 'text', []);
 
     $migration = $this->prophesize(MigrationInterface::class);
@@ -51,11 +49,11 @@ class TextFieldTest extends UnitTestCase {
   /**
    * @covers ::defineValueProcessPipeline
    */
-  public function testFilteredTextValueProcessPipeline() {
+  public function testProcessFilteredTextFieldValues($method = 'defineValueProcessPipeline') {
     $field_info = [
       'widget_type' => 'text_textfield',
     ];
-    $this->plugin->defineValueProcessPipeline($this->migration, 'body', $field_info);
+    $this->plugin->$method($this->migration, 'body', $field_info);
 
     $process = $this->migration->getProcess();
     $this->assertSame('sub_process', $process['plugin']);
@@ -74,14 +72,14 @@ class TextFieldTest extends UnitTestCase {
   /**
    * @covers ::defineValueProcessPipeline
    */
-  public function testBooleanTextImplicitValueProcessPipeline() {
+  public function testProcessBooleanTextImplicitValues($method = 'defineValueProcessPipeline') {
     $info = [
       'widget_type' => 'optionwidgets_onoff',
       'global_settings' => [
         'allowed_values' => "foo\nbar",
       ],
     ];
-    $this->plugin->defineValueProcessPipeline($this->migration, 'field', $info);
+    $this->plugin->$method($this->migration, 'field', $info);
 
     $expected = [
       'value' => [
@@ -99,14 +97,14 @@ class TextFieldTest extends UnitTestCase {
   /**
    * @covers ::defineValueProcessPipeline
    */
-  public function testBooleanTextExplicitValueProcessPipeline() {
+  public function testProcessBooleanTextExplicitValues($method = 'defineValueProcessPipeline') {
     $info = [
       'widget_type' => 'optionwidgets_onoff',
       'global_settings' => [
         'allowed_values' => "foo|Foo\nbaz|Baz",
       ],
     ];
-    $this->plugin->defineValueProcessPipeline($this->migration, 'field', $info);
+    $this->plugin->$method($this->migration, 'field', $info);
 
     $expected = [
       'value' => [
@@ -128,25 +126,25 @@ class TextFieldTest extends UnitTestCase {
     return [
       ['string_long', 'text_textfield', ['text_processing' => FALSE]],
       ['string', 'text_textfield', [
-        'text_processing' => FALSE,
-        'max_length' => 128,
-      ],
+          'text_processing' => FALSE,
+          'max_length' => 128,
+        ],
       ],
       ['string_long', 'text_textfield', [
-        'text_processing' => FALSE,
-        'max_length' => 4096,
-      ],
+          'text_processing' => FALSE,
+          'max_length' => 4096,
+        ],
       ],
       ['text_long', 'text_textfield', ['text_processing' => TRUE]],
       ['text', 'text_textfield', [
-        'text_processing' => TRUE,
-        'max_length' => 128,
-      ],
+          'text_processing' => TRUE,
+          'max_length' => 128,
+        ],
       ],
       ['text_long', 'text_textfield', [
-        'text_processing' => TRUE,
-        'max_length' => 4096,
-      ],
+          'text_processing' => TRUE,
+          'max_length' => 4096,
+        ],
       ],
       ['list_string', 'optionwidgets_buttons'],
       ['list_string', 'optionwidgets_select'],

@@ -53,13 +53,17 @@ class Cookie implements AuthenticationProviderInterface, EventSubscriberInterfac
    *   The session configuration.
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
-   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   * @param \Drupal\Core\Messenger\MessengerInterface|null $messenger
    *   The messenger.
    */
-  public function __construct(SessionConfigurationInterface $session_configuration, Connection $connection, MessengerInterface $messenger) {
+  public function __construct(SessionConfigurationInterface $session_configuration, Connection $connection, MessengerInterface $messenger = NULL) {
     $this->sessionConfiguration = $session_configuration;
     $this->connection = $connection;
     $this->messenger = $messenger;
+    if ($this->messenger === NULL) {
+      @trigger_error('The MessengerInterface must be passed to ' . __NAMESPACE__ . '\Cookie::__construct(). It was added in drupal:9.2.0 and will be required before drupal:10.0.0.', E_USER_DEPRECATED);
+      $this->messenger = \Drupal::messenger();
+    }
   }
 
   /**
@@ -130,8 +134,8 @@ class Cookie implements AuthenticationProviderInterface, EventSubscriberInterfac
         $options = UrlHelper::parse($url);
         $options['query']['check_logged_in'] = '1';
         $url = $options['path'] . '?' . UrlHelper::buildQuery($options['query']);
-        if (!empty($options['fragment'])) {
-          $url .= '#' . $options['fragment'];
+        if (!empty($options['#fragment'])) {
+          $url .= '#' . $options['#fragment'];
         }
         // In the case of trusted redirect, we have to update the list of
         // trusted URLs because here we've just modified its target URL
@@ -150,7 +154,7 @@ class Cookie implements AuthenticationProviderInterface, EventSubscriberInterfac
    * @return array
    *   An array of event listener definitions.
    */
-  public static function getSubscribedEvents(): array {
+  public static function getSubscribedEvents() {
     $events[KernelEvents::RESPONSE][] = ['addCheckToUrl', -1000];
     return $events;
   }

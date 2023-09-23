@@ -16,7 +16,7 @@ class CommentPagerTest extends CommentTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
   /**
    * Confirms comment paging works correctly with flat and threaded comments.
@@ -37,14 +37,6 @@ class CommentPagerTest extends CommentTestBase {
     $comments[] = $this->postComment($node, $this->randomMachineName(), $this->randomMachineName(), TRUE);
 
     $this->setCommentSettings('default_mode', CommentManagerInterface::COMMENT_MODE_FLAT, 'Comment paging changed.');
-
-    // Set "Comments per page" as zero and verify that all comments are appearing
-    // on the page.
-    $this->setCommentsPerPage(0);
-    $this->drupalGet('node/' . $node->id());
-    $this->assertTrue($this->commentExists($comments[0]), 'Comment 1 appears on page.');
-    $this->assertTrue($this->commentExists($comments[1]), 'Comment 2 appears on page.');
-    $this->assertTrue($this->commentExists($comments[2]), 'Comment 3 appears on page.');
 
     // Set comments to one per page so that we are able to test paging without
     // needing to insert large numbers of comments.
@@ -100,10 +92,6 @@ class CommentPagerTest extends CommentTestBase {
     $this->setCommentsPerPage(0);
     $this->drupalGet('node/' . $node->id(), ['query' => ['page' => 0]]);
     $this->assertFalse($this->commentExists($reply2, TRUE), 'Threaded mode works correctly when comments per page is 0.');
-    // Test that all main comments are appearing in the threaded mode.
-    $this->assertTrue($this->commentExists($comments[0]), 'Comment 1 appears on page.');
-    $this->assertTrue($this->commentExists($comments[1]), 'Comment 2 appears on page.');
-    $this->assertTrue($this->commentExists($comments[2]), 'Comment 3 appears on page.');
 
     $this->drupalLogout();
   }
@@ -444,7 +432,7 @@ class CommentPagerTest extends CommentTestBase {
       $url_target = $this->getAbsoluteUrl($urls[$index]->getAttribute('href'));
       return $this->drupalGet($url_target);
     }
-    $this->fail(new FormattableMarkup('Link %label does not exist on @url_before', ['%label' => $xpath, '@url_before' => $url_before]));
+    $this->fail(new FormattableMarkup('Link %label does not exist on @url_before', ['%label' => $xpath, '@url_before' => $url_before]), 'Browser');
     return FALSE;
   }
 

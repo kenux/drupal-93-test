@@ -11,19 +11,19 @@ use Drupal\block_content\BlockContentInterface;
 use Drupal\user\UserInterface;
 
 /**
- * Defines the content block entity class.
+ * Defines the custom block entity class.
  *
  * @ContentEntityType(
  *   id = "block_content",
- *   label = @Translation("Content block"),
- *   label_collection = @Translation("Content blocks"),
- *   label_singular = @Translation("content block"),
- *   label_plural = @Translation("content blocks"),
+ *   label = @Translation("Custom block"),
+ *   label_collection = @Translation("Custom blocks"),
+ *   label_singular = @Translation("custom block"),
+ *   label_plural = @Translation("custom blocks"),
  *   label_count = @PluralTranslation(
- *     singular = "@count content block",
- *     plural = "@count content blocks",
+ *     singular = "@count custom block",
+ *     plural = "@count custom blocks",
  *   ),
- *   bundle_label = @Translation("Block type"),
+ *   bundle_label = @Translation("Custom block type"),
  *   handlers = {
  *     "storage" = "Drupal\Core\Entity\Sql\SqlContentEntityStorage",
  *     "access" = "Drupal\block_content\BlockContentAccessControlHandler",
@@ -34,31 +34,22 @@ use Drupal\user\UserInterface;
  *       "add" = "Drupal\block_content\BlockContentForm",
  *       "edit" = "Drupal\block_content\BlockContentForm",
  *       "delete" = "Drupal\block_content\Form\BlockContentDeleteForm",
- *       "default" = "Drupal\block_content\BlockContentForm",
- *       "revision-delete" = \Drupal\Core\Entity\Form\RevisionDeleteForm::class,
- *       "revision-revert" = \Drupal\Core\Entity\Form\RevisionRevertForm::class,
- *     },
- *     "route_provider" = {
- *       "revision" = \Drupal\Core\Entity\Routing\RevisionHtmlRouteProvider::class,
+ *       "default" = "Drupal\block_content\BlockContentForm"
  *     },
  *     "translation" = "Drupal\block_content\BlockContentTranslationHandler"
  *   },
- *   admin_permission = "administer block content",
- *   collection_permission = "access block library",
+ *   admin_permission = "administer blocks",
  *   base_table = "block_content",
  *   revision_table = "block_content_revision",
  *   data_table = "block_content_field_data",
  *   revision_data_table = "block_content_field_revision",
  *   show_revision_ui = TRUE,
  *   links = {
- *     "canonical" = "/admin/content/block/{block_content}",
- *     "delete-form" = "/admin/content/block/{block_content}/delete",
- *     "edit-form" = "/admin/content/block/{block_content}",
- *     "collection" = "/admin/content/block",
+ *     "canonical" = "/block/{block_content}",
+ *     "delete-form" = "/block/{block_content}/delete",
+ *     "edit-form" = "/block/{block_content}",
+ *     "collection" = "/admin/structure/block/block-content",
  *     "create" = "/block",
- *     "revision-delete-form" = "/admin/content/block/{block_content}/revision/{block_content_revision}/delete",
- *     "revision-revert-form" = "/admin/content/block/{block_content}/revision/{block_content_revision}/revert",
- *     "version-history" = "/admin/content/block/{block_content}/revisions",
  *   },
  *   translatable = TRUE,
  *   entity_keys = {
@@ -92,9 +83,9 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
   /**
    * The theme the block is being created in.
    *
-   * When creating a new content block from the block library, the user is
+   * When creating a new custom block from the block library, the user is
    * redirected to the configure form for that block in the given theme. The
-   * theme is stored against the block when the content block add form is shown.
+   * theme is stored against the block when the custom block add form is shown.
    *
    * @var string
    */
@@ -138,20 +129,6 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
   /**
    * {@inheritdoc}
    */
-  public static function preDelete(EntityStorageInterface $storage, array $entities) {
-    parent::preDelete($storage, $entities);
-
-    /** @var \Drupal\block_content\BlockContentInterface $block */
-    foreach ($entities as $block) {
-      foreach ($block->getInstances() as $instance) {
-        $instance->delete();
-      }
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function postDelete(EntityStorageInterface $storage, array $entities) {
     parent::postDelete($storage, $entities);
     /** @var \Drupal\block_content\BlockContentInterface $block */
@@ -188,18 +165,28 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
   /**
    * {@inheritdoc}
    */
+  public function delete() {
+    foreach ($this->getInstances() as $instance) {
+      $instance->delete();
+    }
+    parent::delete();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     /** @var \Drupal\Core\Field\BaseFieldDefinition[] $fields */
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['id']->setLabel(t('Content block ID'))
-      ->setDescription(t('The content block ID.'));
+    $fields['id']->setLabel(t('Custom block ID'))
+      ->setDescription(t('The custom block ID.'));
 
-    $fields['uuid']->setDescription(t('The content block UUID.'));
+    $fields['uuid']->setDescription(t('The custom block UUID.'));
 
     $fields['revision_id']->setDescription(t('The revision ID.'));
 
-    $fields['langcode']->setDescription(t('The content block language code.'));
+    $fields['langcode']->setDescription(t('The custom block language code.'));
 
     $fields['type']->setLabel(t('Block type'))
       ->setDescription(t('The block type.'));
@@ -216,11 +203,12 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
         'type' => 'string_textfield',
         'weight' => -5,
       ])
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->addConstraint('UniqueField', []);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the content block was last edited.'))
+      ->setDescription(t('The time that the custom block was last edited.'))
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
 
@@ -324,7 +312,7 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
    * Invalidates the block plugin cache after changes and deletions.
    */
   protected static function invalidateBlockPluginCache() {
-    // Invalidate the block cache to update content block-based derivatives.
+    // Invalidate the block cache to update custom block-based derivatives.
     \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
   }
 

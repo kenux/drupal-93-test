@@ -11,16 +11,10 @@ use Drupal\Core\Form\FormStateInterface;
  * @FieldType(
  *   id = "text",
  *   label = @Translation("Text (formatted)"),
- *   description = {
- *     @Translation("Ideal for titles and names that need to support markup such as bold, italics or links"),
- *     @Translation("Efficient storage for short text"),
- *     @Translation("Requires specifying a maximum length"),
- *     @Translation("Good for fields with known or predictable lengths"),
- *   },
- *   category = "formatted_text",
+ *   description = @Translation("This field stores a text with a text format."),
+ *   category = @Translation("Text"),
  *   default_widget = "text_textfield",
- *   default_formatter = "text_default",
- *   list_class = "\Drupal\text\Plugin\Field\FieldType\TextFieldItemList"
+ *   default_formatter = "text_default"
  * )
  */
 class TextItem extends TextItemBase {
@@ -67,7 +61,7 @@ class TextItem extends TextItemBase {
         'value' => [
           'Length' => [
             'max' => $max_length,
-            'maxMessage' => $this->t('%name: the text may not be longer than @max characters.', ['%name' => $this->getFieldDefinition()->getLabel(), '@max' => $max_length]),
+            'maxMessage' => t('%name: the text may not be longer than @max characters.', ['%name' => $this->getFieldDefinition()->getLabel(), '@max' => $max_length]),
           ],
         ],
       ]);
@@ -84,10 +78,10 @@ class TextItem extends TextItemBase {
 
     $element['max_length'] = [
       '#type' => 'number',
-      '#title' => $this->t('Maximum length'),
+      '#title' => t('Maximum length'),
       '#default_value' => $this->getSetting('max_length'),
       '#required' => TRUE,
-      '#description' => $this->t('The maximum length of the field in characters.'),
+      '#description' => t('The maximum length of the field in characters.'),
       '#min' => 1,
       '#disabled' => $has_data,
     ];

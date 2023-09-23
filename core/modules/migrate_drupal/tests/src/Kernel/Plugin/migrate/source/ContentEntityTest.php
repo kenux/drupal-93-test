@@ -93,7 +93,9 @@ class ContentEntityTest extends KernelTestBase {
     $this->installEntitySchema('file');
     $this->installEntitySchema('media');
     $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('taxonomy_vocabulary');
     $this->installEntitySchema('user');
+    $this->installSchema('system', ['sequences']);
     $this->installSchema('user', 'users_data');
     $this->installSchema('file', 'file_usage');
     $this->installSchema('node', ['node_access']);
@@ -170,7 +172,7 @@ class ContentEntityTest extends KernelTestBase {
     ]);
     $node->save();
     $node->addTranslation('fr', [
-      'title' => 'fr - Apples',
+      'title' => 'Pommes',
       $this->fieldName => $term->id(),
     ])->save();
 
@@ -320,7 +322,7 @@ class ContentEntityTest extends KernelTestBase {
       }
       $this->assertEquals('fr', $values['langcode']);
       $this->assertEquals(1, $values['status'][0]['value']);
-      $this->assertEquals('fr - Apples', $values['title'][0]['value']);
+      $this->assertEquals('Pommes', $values['title'][0]['value']);
       $this->assertEquals(0, $values['default_langcode'][0]['value']);
       $this->assertEquals(1, $values['field_entity_reference'][0]['target_id']);
     }

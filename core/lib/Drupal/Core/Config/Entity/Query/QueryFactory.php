@@ -40,16 +40,6 @@ class QueryFactory implements QueryFactoryInterface, EventSubscriberInterface {
   protected $namespaces;
 
   /**
-   * The key value factory.
-   */
-  protected KeyValueFactoryInterface $keyValueFactory;
-
-  /**
-   * The configuration manager.
-   */
-  protected ConfigManagerInterface $configManager;
-
-  /**
    * Constructs a QueryFactory object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -259,7 +249,7 @@ class QueryFactory implements QueryFactoryInterface, EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents(): array {
+  public static function getSubscribedEvents() {
     $events[ConfigEvents::SAVE][] = ['onConfigSave', 128];
     $events[ConfigEvents::DELETE][] = ['onConfigDelete', 128];
     return $events;

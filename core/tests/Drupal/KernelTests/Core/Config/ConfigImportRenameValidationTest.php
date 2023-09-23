@@ -63,8 +63,7 @@ class ConfigImportRenameValidationTest extends KernelTestBase {
       $this->container->get('module_installer'),
       $this->container->get('theme_handler'),
       $this->container->get('string_translation'),
-      $this->container->get('extension.list.module'),
-      $this->container->get('extension.list.theme')
+      $this->container->get('extension.list.module')
     );
   }
 
@@ -89,7 +88,7 @@ class ConfigImportRenameValidationTest extends KernelTestBase {
 
     // Create a content type with a matching UUID in the active storage.
     $content_type = NodeType::create([
-      'type' => $this->randomMachineName(16),
+      'type' => mb_strtolower($this->randomMachineName(16)),
       'name' => $this->randomMachineName(),
       'uuid' => $uuid,
     ]);

@@ -54,7 +54,7 @@ class CustomPageExceptionHtmlSubscriberTest extends UnitTestCase {
   /**
    * The tested custom page exception subscriber.
    *
-   * @var \Drupal\Core\EventSubscriber\CustomPageExceptionHtmlSubscriber|\Drupal\Tests\Core\EventSubscriber\CustomPageExceptionHtmlSubscriberTest
+   * @var \Drupal\Core\EventSubscriber\CustomPageExceptionHtmlSubscriber|\Drupal\Tests\Core\EventSubscriber\TestCustomPageExceptionHtmlSubscriber
    */
   protected $customPageSubscriber;
 
@@ -82,8 +82,6 @@ class CustomPageExceptionHtmlSubscriberTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->configFactory = $this->getConfigFactoryStub(['system.site' => ['page.403' => '/access-denied-page', 'page.404' => '/not-found-page']]);
 
     $this->kernel = $this->createMock('Symfony\Component\HttpKernel\HttpKernelInterface');
@@ -141,7 +139,7 @@ class CustomPageExceptionHtmlSubscriberTest extends UnitTestCase {
       return new HtmlResponse($request->getMethod());
     });
 
-    $event = new ExceptionEvent($this->kernel, $request, HttpKernelInterface::MAIN_REQUEST, new NotFoundHttpException('foo'));
+    $event = new ExceptionEvent($this->kernel, $request, HttpKernelInterface::MASTER_REQUEST, new NotFoundHttpException('foo'));
 
     $this->customPageSubscriber->onException($event);
 
@@ -168,7 +166,7 @@ class CustomPageExceptionHtmlSubscriberTest extends UnitTestCase {
       return new Response($request->getMethod() . ' ' . UrlHelper::buildQuery($request->query->all()));
     });
 
-    $event = new ExceptionEvent($this->kernel, $request, HttpKernelInterface::MAIN_REQUEST, new NotFoundHttpException('foo'));
+    $event = new ExceptionEvent($this->kernel, $request, HttpKernelInterface::MASTER_REQUEST, new NotFoundHttpException('foo'));
     $this->customPageSubscriber->onException($event);
 
     $response = $event->getResponse();

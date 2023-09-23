@@ -195,7 +195,8 @@ interface MigrationInterface extends PluginInspectionInterface, DerivativeInspec
   public function clearInterruptionResult();
 
   /**
-   * Sets the migration status as interrupted with a given result code.
+   * Signal that the migration should be interrupted with the specified result
+   * code.
    *
    * @param int $result
    *   One of the MigrationInterface::RESULT_* constants.
@@ -203,7 +204,8 @@ interface MigrationInterface extends PluginInspectionInterface, DerivativeInspec
   public function interruptMigration($result);
 
   /**
-   * Gets the normalized process plugin configuration.
+   * Get the normalized process pipeline configuration describing the process
+   * plugins.
    *
    * The process configuration is always normalized. All shorthand processing
    * will be expanded into their full representations.
@@ -261,11 +263,6 @@ interface MigrationInterface extends PluginInspectionInterface, DerivativeInspec
    *
    * @return bool
    *   TRUE if the migration is tracking last import time.
-   *
-   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. There is no
-   * replacement.
-   *
-   * @see https://www.drupal.org/node/3282894
    */
   public function isTrackLastImported();
 
@@ -276,11 +273,6 @@ interface MigrationInterface extends PluginInspectionInterface, DerivativeInspec
    *   Boolean value to indicate if the migration should track last import time.
    *
    * @return $this
-   *
-   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. There is no
-   * replacement.
-   *
-   * @see https://www.drupal.org/node/3282894
    */
   public function setTrackLastImported($track_last_imported);
 
@@ -313,11 +305,6 @@ interface MigrationInterface extends PluginInspectionInterface, DerivativeInspec
    *
    * @return bool
    *   Flag to determine desire of tracking time of last import.
-   *
-   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. There is no
-   * replacement.
-   *
-   * @see https://www.drupal.org/node/3282894
    */
   public function getTrackLastImported();
 

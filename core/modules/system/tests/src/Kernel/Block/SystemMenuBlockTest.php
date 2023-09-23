@@ -82,6 +82,7 @@ class SystemMenuBlockTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    $this->installSchema('system', 'sequences');
     $this->installEntitySchema('user');
     $this->installEntitySchema('menu_link_content');
 
@@ -207,7 +208,7 @@ class SystemMenuBlockTest extends KernelTestBase {
       'test.example2' => [],
       'test.example5' => [
         'test.example7' => [],
-      ],
+       ],
       'test.example6' => [],
       'test.example8' => [],
     ];

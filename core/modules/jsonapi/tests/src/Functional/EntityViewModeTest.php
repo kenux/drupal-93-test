@@ -10,7 +10,7 @@ use Drupal\Core\Url;
  *
  * @group jsonapi
  */
-class EntityViewModeTest extends ConfigEntityResourceTestBase {
+class EntityViewModeTest extends ResourceTestBase {
 
   /**
    * {@inheritdoc}
@@ -55,7 +55,6 @@ class EntityViewModeTest extends ConfigEntityResourceTestBase {
     $entity_view_mode = EntityViewMode::create([
       'id' => 'user.test',
       'label' => 'Test',
-      'description' => '',
       'targetEntityType' => 'user',
     ]);
     $entity_view_mode->save();
@@ -94,7 +93,6 @@ class EntityViewModeTest extends ConfigEntityResourceTestBase {
           ],
           'label' => 'Test',
           'langcode' => 'en',
-          'description' => '',
           'status' => TRUE,
           'targetEntityType' => 'user',
           'drupal_internal__id' => 'user.test',
@@ -108,7 +106,6 @@ class EntityViewModeTest extends ConfigEntityResourceTestBase {
    */
   protected function getPostDocument() {
     // @todo Update in https://www.drupal.org/node/2300677.
-    return [];
   }
 
 }

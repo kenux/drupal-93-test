@@ -23,7 +23,6 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\field\FieldLabelOptionsTrait;
 
 /**
  * Provides a block that renders a field from an entity.
@@ -38,7 +37,6 @@ use Drupal\field\FieldLabelOptionsTrait;
  */
 class FieldBlock extends BlockBase implements ContextAwarePluginInterface, ContainerFactoryPluginInterface {
 
-  use FieldLabelOptionsTrait;
   /**
    * The entity field manager.
    *
@@ -161,11 +159,7 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $display_settings['third_party_settings']['layout_builder']['view_mode'] = $this->getContextValue('view_mode');
     $entity = $this->getEntity();
     try {
-      $build = [];
-      $view = $entity->get($this->fieldName)->view($display_settings);
-      if ($view) {
-        $build = [$view];
-      }
+      $build = $entity->get($this->fieldName)->view($display_settings);
     }
     // @todo Remove in https://www.drupal.org/project/drupal/issues/2367555.
     catch (EnforcedResponseException $e) {
@@ -210,14 +204,8 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
       return $access;
     }
 
-    // Check to see if the field has any values or a default value.
-    if ($field->isEmpty() && !$field->getFieldDefinition()->getDefaultValue($entity)) {
-      // @todo Remove special handling of image fields after
-      //   https://www.drupal.org/project/drupal/issues/3005528.
-      if ($field->getFieldDefinition()->getType() === 'image' && $field->getFieldDefinition()->getSetting('default_image')) {
-        return $access;
-      }
-
+    // Check to see if the field has any values.
+    if ($field->isEmpty()) {
       return $access->andIf(AccessResult::forbidden());
     }
     return $access;
@@ -253,7 +241,15 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $form['formatter']['label'] = [
       '#type' => 'select',
       '#title' => $this->t('Label'),
-      '#options' => $this->getFieldLabelOptions(),
+      // @todo This is directly copied from
+      //   \Drupal\field_ui\Form\EntityViewDisplayEditForm::getFieldLabelOptions(),
+      //   resolve this in https://www.drupal.org/project/drupal/issues/2933924.
+      '#options' => [
+        'above' => $this->t('Above'),
+        'inline' => $this->t('Inline'),
+        'hidden' => '- ' . $this->t('Hidden') . ' -',
+        'visually_hidden' => '- ' . $this->t('Visually Hidden') . ' -',
+      ],
       '#default_value' => $config['formatter']['label'],
     ];
 
@@ -315,18 +311,15 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $settings_form = [];
     // Invoke hook_field_formatter_third_party_settings_form(), keying resulting
     // subforms by module name.
-    $this->moduleHandler->invokeAllWith(
-      'field_formatter_third_party_settings_form',
-      function (callable $hook, string $module) use (&$settings_form, $plugin, $field_definition, $form, $form_state) {
-        $settings_form[$module] = $hook(
-          $plugin,
-          $field_definition,
-          EntityDisplayBase::CUSTOM_MODE,
-          $form,
-          $form_state,
-        );
-      }
-    );
+    foreach ($this->moduleHandler->getImplementations('field_formatter_third_party_settings_form') as $module) {
+      $settings_form[$module] = $this->moduleHandler->invoke($module, 'field_formatter_third_party_settings_form', [
+        $plugin,
+        $field_definition,
+        EntityDisplayBase::CUSTOM_MODE,
+        $form,
+        $form_state,
+      ]);
+    }
     return $settings_form;
   }
 

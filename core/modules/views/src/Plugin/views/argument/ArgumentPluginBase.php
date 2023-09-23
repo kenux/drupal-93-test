@@ -66,61 +66,12 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   public $name_table;
 
   /**
-   * The name table alias.
-   */
-  public string $name_table_alias;
-
-  /**
-   * The field to use for the name to display in the summary.
-   *
-   * For example, for the node: nid argument, the argument itself is the nid,
-   * but node.title is displayed.
-   *
+   * The field to use for the name to use in the summary, which is
+   * the displayed output. For example, for the node: nid argument,
+   * the argument itself is the nid, but node.title is displayed.
    * @var string
    */
   public $name_field;
-
-  /**
-   * The alias for the field.
-   */
-  public string $name_alias;
-
-  /**
-   * The base table alias.
-   */
-  public string $base_alias;
-
-  /**
-   * The alias count.
-   */
-  public string $count_alias;
-
-  /**
-   * Is argument validated.
-   */
-  public ?bool $argument_validated;
-
-  /**
-   * Is argument a default.
-   */
-  public bool $is_default;
-
-  /**
-   * The operator used for the query: or|and.
-   */
-  public string $operator;
-
-  /**
-   * The title set by argument validation.
-   */
-  public ?string $validated_title;
-
-  /**
-   * Keyed array by alias of table relations.
-   *
-   * @var string[]
-   */
-  public ?array $tableAliases;
 
   /**
    * Overrides Drupal\views\Plugin\views\HandlerBase:init().
@@ -177,6 +128,7 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
     $options['title'] = ['default' => ''];
     $options['default_argument_type'] = ['default' => 'fixed'];
     $options['default_argument_options'] = ['default' => []];
+    $options['default_argument_skip_url'] = ['default' => FALSE];
     $options['summary_options'] = ['default' => []];
     $options['summary'] = [
       'contains' => [
@@ -428,8 +380,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
 
     foreach ($this->view->display_handler->getHandlers('argument') as $arg => $handler) {
       /** @var \Drupal\views\Plugin\views\argument\ArgumentPluginBase $handler */
-      $options[(string) $this->t('Arguments')]["{{ arguments.$arg }}"] = $this->t('@argument title', ['@argument' => $handler->adminLabel()]);
-      $options[(string) $this->t('Arguments')]["{{ raw_arguments.$arg }}"] = $this->t('@argument input', ['@argument' => $handler->adminLabel()]);
+      $options[(string) t('Arguments')]["{{ arguments.$arg }}"] = $this->t('@argument title', ['@argument' => $handler->adminLabel()]);
+      $options[(string) t('Arguments')]["{{ raw_arguments.$arg }}"] = $this->t('@argument input', ['@argument' => $handler->adminLabel()]);
     }
 
     // We have some options, so make a list.
@@ -539,8 +491,6 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Default actions.
-   *
    * Provide a list of default behaviors for this argument if the argument
    * is not present.
    *
@@ -597,13 +547,19 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Provides a form for selecting the default argument.
-   *
-   * This is used when the default action provides a default argument.
+   * Provide a form for selecting the default argument when the
+   * default action is set to provide default argument.
    */
   public function defaultArgumentForm(&$form, FormStateInterface $form_state) {
     $plugins = Views::pluginManager('argument_default')->getDefinitions();
     $options = [];
+
+    $form['default_argument_skip_url'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Skip default argument for view URL'),
+      '#default_value' => $this->options['default_argument_skip_url'],
+      '#description' => $this->t('Select whether to include this default argument when constructing the URL for this view. Skipping default arguments is useful e.g. in the case of feeds.'),
+    ];
 
     $form['default_argument_type'] = [
       '#prefix' => '<div id="edit-options-default-argument-type-wrapper">',
@@ -656,9 +612,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Provides a form for selecting summary options.
-   *
-   * This is used when the default action displays a summary.
+   * Provide a form for selecting further summary options when the
+   * default action is set to display one.
    */
   public function defaultSummaryForm(&$form, FormStateInterface $form_state) {
     $style_plugins = Views::pluginManager('style')->getDefinitions();
@@ -746,7 +701,7 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
    *
    * Override this method only with extreme care.
    *
-   * @return bool
+   * @return
    *   A boolean value; if TRUE, continue building this view. If FALSE,
    *   building the view will be aborted here.
    */
@@ -823,7 +778,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Returns true, since the argument builder knows where to find the argument.
+   * This just returns true. The view argument builder will know where
+   * to find the argument from.
    */
   protected function defaultDefault() {
     return TRUE;
@@ -898,6 +854,9 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
    * - addField: add a 'num_nodes' field for the count. Usually it will
    *   be a count on $view->base_field
    * - setCountField: Reset the count field so we get the right paging.
+   *
+   * @return
+   *   The alias used to get the number of records (count) for this entry.
    */
   protected function summaryQuery() {
     $this->ensureMyTable();
@@ -905,12 +864,11 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
     $this->base_alias = $this->query->addField($this->tableAlias, $this->realField);
 
     $this->summaryNameField();
-    $this->summaryBasics();
+    return $this->summaryBasics();
   }
 
   /**
-   * Adds the name field, which is the field displayed in summary queries.
-   *
+   * Add the name field, which is the field displayed in summary queries.
    * This is often used when the argument is numeric.
    */
   protected function summaryNameField() {
@@ -945,8 +903,6 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Adds basic information to the summary query.
-   *
    * Some basic summary behavior that doesn't need to be repeated as much as
    * code that goes into summaryQuery()
    */
@@ -965,9 +921,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Sorts the summary based upon the user's selection.
-   *
-   * The base variant of this is usually adequate.
+   * Sorts the summary based upon the user's selection. The base variant of
+   * this is usually adequate.
    *
    * @param $order
    *   The order selected in the UI.
@@ -980,9 +935,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Provides the argument to use to link from the summary to the next level.
-   *
-   * This will be called once per row of a summary, and used as part of
+   * Provide the argument to use to link from the summary to the next level;
+   * this will be called once per row of a summary, and used as part of
    * $view->getUrl().
    *
    * @param $data
@@ -993,14 +947,15 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Provides the name to use for the summary, defaults to the name field.
+   * Provides the name to use for the summary. By default this is just
+   * the name field.
    *
    * @param $data
    *   The query results for the row.
    */
   public function summaryName($data) {
-    $value = (string) $data->{$this->name_alias};
-    if ($value === '' && isset($this->definition['empty field name'])) {
+    $value = $data->{$this->name_alias};
+    if (empty($value) && !empty($this->definition['empty field name'])) {
       $value = $this->definition['empty field name'];
     }
     return $value;
@@ -1026,10 +981,8 @@ abstract class ArgumentPluginBase extends HandlerBase implements CacheableDepend
   }
 
   /**
-   * Determines the title to use for the view.
-   *
-   * This may be set by a validator so we don't necessarily call through to
-   * title().
+   * Called by the view object to get the title. This may be set by a
+   * validator so we don't necessarily call through to title().
    */
   public function getTitle() {
     if (isset($this->validated_title)) {

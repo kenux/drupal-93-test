@@ -7,7 +7,8 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\Role;
 
 /**
- * Tests that the config schema is valid when roles are added or removed.
+ * Ensures the user action for adding and removing roles have valid config
+ * schema.
  *
  * @group user
  */
@@ -26,7 +27,7 @@ class UserActionConfigSchemaTest extends KernelTestBase {
    * Tests whether the user action config schema are valid.
    */
   public function testValidUserActionConfigSchema() {
-    $rid = $this->randomMachineName(8);
+    $rid = strtolower($this->randomMachineName(8));
     Role::create(['id' => $rid, 'label' => $rid])->save();
 
     // Test user_add_role_action configuration.

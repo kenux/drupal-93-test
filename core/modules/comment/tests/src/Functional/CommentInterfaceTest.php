@@ -21,13 +21,14 @@ class CommentInterfaceTest extends CommentTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
   /**
    * Set up comments to have subject and preview disabled.
    */
   protected function setUp(): void {
     parent::setUp();
+    $this->drupalLogin($this->adminUser);
     // Make sure that comment field title is not displayed when there's no
     // comments posted.
     $this->drupalGet($this->node->toUrl());
@@ -38,6 +39,7 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->setCommentForm(TRUE);
     $this->setCommentSubject(FALSE);
     $this->setCommentSettings('default_mode', CommentManagerInterface::COMMENT_MODE_THREADED, 'Comment paging changed.');
+    $this->drupalLogout();
   }
 
   /**
@@ -61,8 +63,10 @@ class CommentInterfaceTest extends CommentTestBase {
 
     // Set comments to have subject and preview to required.
     $this->drupalLogout();
+    $this->drupalLogin($this->adminUser);
     $this->setCommentSubject(TRUE);
     $this->setCommentPreview(DRUPAL_REQUIRED);
+    $this->drupalLogout();
 
     // Create comment #2 that allows subject and requires preview.
     $this->drupalLogin($this->webUser);
@@ -83,7 +87,12 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->drupalGet('node/' . $this->node->id());
     $this->assertSession()->pageTextContains($subject_text);
     $this->assertSession()->pageTextContains($comment_text);
-    $this->assertSession()->elementExists('xpath', '//footer/a[contains(@href,"' . base_path() . 'comment/' . $comment->id() . '#comment-' . $comment->id() . '") and text()="Permalink"]');
+    $arguments = [
+      ':link' => base_path() . 'comment/' . $comment->id() . '#comment-' . $comment->id(),
+    ];
+    $pattern_permalink = '//footer[contains(@class,"comment__meta")]/a[contains(@href,:link) and text()="Permalink"]';
+    $permalink = $this->xpath($pattern_permalink, $arguments);
+    $this->assertNotEmpty($permalink, 'Permalink link found.');
 
     // Set comments to have subject and preview to optional.
     $this->drupalLogout();
@@ -117,7 +126,7 @@ class CommentInterfaceTest extends CommentTestBase {
     // Reply to comment #2 creating comment #3 with optional preview and no
     // subject though field enabled.
     $this->drupalLogin($this->webUser);
-    // Deliberately use the wrong URL to test
+    // Deliberately use the wrong url to test
     // \Drupal\comment\Controller\CommentController::redirectNode().
     $this->drupalGet('comment/' . $this->node->id() . '/reply');
     // Verify we were correctly redirected.
@@ -204,7 +213,9 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->assertFalse($this->commentExists($reply, TRUE), 'Reply not found.');
 
     // Enabled comment form on node page.
+    $this->drupalLogin($this->adminUser);
     $this->setCommentForm(TRUE);
+    $this->drupalLogout();
 
     // Submit comment through node form.
     $this->drupalLogin($this->webUser);
@@ -214,6 +225,7 @@ class CommentInterfaceTest extends CommentTestBase {
 
     // Disable comment form on node page.
     $this->drupalLogout();
+    $this->drupalLogin($this->adminUser);
     $this->setCommentForm(FALSE);
   }
 
@@ -229,15 +241,15 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->drupalGet('node/' . $this->node->id());
 
     // Break when there is a word boundary before 29 characters.
-    $body_text = 'A quick brown fox jumped over the lazy dog';
+    $body_text = 'Lorem ipsum Lorem ipsum Loreming ipsum Lorem ipsum';
     $comment1 = $this->postComment(NULL, $body_text, '', TRUE);
     $this->assertTrue($this->commentExists($comment1), 'Form comment found.');
-    $this->assertEquals('A quick brown fox jumped…', $comment1->getSubject());
+    $this->assertEquals('Lorem ipsum Lorem ipsum…', $comment1->getSubject());
 
     // Break at 29 characters where there's no boundary before that.
-    $body_text2 = 'AQuickBrownFoxJumpedOverTheLazyDog';
+    $body_text2 = 'LoremipsumloremipsumLoremingipsumLoremipsum';
     $comment2 = $this->postComment(NULL, $body_text2, '', TRUE);
-    $this->assertEquals('AQuickBrownFoxJumpedOverTheL…', $comment2->getSubject());
+    $this->assertEquals('LoremipsumloremipsumLoreming…', $comment2->getSubject());
   }
 
   /**
@@ -304,16 +316,15 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->postComment($this->node, $comment_text);
 
     // Comment displayed in 'default' display mode found and has body text.
-    $comment_element = $this->cssSelect('#comment-1');
+    $comment_element = $this->cssSelect('.comment-wrapper');
     $this->assertNotEmpty($comment_element);
     $this->assertSession()->responseContains('<p>' . $comment_text . '</p>');
 
     // Create a new comment entity view mode.
-    $mode = $this->randomMachineName();
+    $mode = mb_strtolower($this->randomMachineName());
     EntityViewMode::create([
       'targetEntityType' => 'comment',
       'id' => "comment.$mode",
-      'label' => 'Comment test',
     ])->save();
     // Create the corresponding entity view display for article node-type. Note
     // that this new view display mode doesn't contain the comment body.
@@ -338,7 +349,7 @@ class CommentInterfaceTest extends CommentTestBase {
     $this->drupalGet($this->node->toUrl());
     // The comment should exist but without the body text because we used $mode
     // mode this time.
-    $comment_element = $this->cssSelect('#comment-1');
+    $comment_element = $this->cssSelect('.comment-wrapper');
     $this->assertNotEmpty($comment_element);
     $this->assertSession()->responseNotContains('<p>' . $comment_text . '</p>');
   }

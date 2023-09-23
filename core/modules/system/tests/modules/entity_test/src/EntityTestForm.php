@@ -57,7 +57,7 @@ class EntityTestForm extends ContentEntityForm {
       }
 
       $is_new = $entity->isNew();
-      $status = $entity->save();
+      $entity->save();
 
       if ($is_new) {
         $message = t('%entity_type @id has been created.', ['@id' => $entity->id(), '%entity_type' => $entity->getEntityTypeId()]);
@@ -80,10 +80,9 @@ class EntityTestForm extends ContentEntityForm {
         $form_state->setRebuild();
       }
     }
-    catch (\AssertionError $e) {
+    catch (\Exception $e) {
       \Drupal::state()->set('entity_test.form.save.exception', get_class($e) . ': ' . $e->getMessage());
     }
-    return $status ?? FALSE;
   }
 
 }

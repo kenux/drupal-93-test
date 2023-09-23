@@ -2,10 +2,10 @@
 
 namespace Drupal\update;
 
-use Drupal\Core\Config\Config;
-use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Url;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -13,7 +13,23 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @internal
  */
-class UpdateSettingsForm extends ConfigFormBase {
+class UpdateSettingsForm extends ConfigFormBase implements ContainerInjectionInterface {
+
+  /**
+   * The email validator.
+   *
+   * @var \Drupal\Component\Utility\EmailValidatorInterface
+   */
+  protected $emailValidator;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    $instance = parent::create($container);
+    $instance->emailValidator = $container->get('email.validator');
+    return $instance;
+  }
 
   /**
    * {@inheritdoc}
@@ -69,14 +85,7 @@ class UpdateSettingsForm extends ConfigFormBase {
         'all' => $this->t('All newer versions'),
         'security' => $this->t('Only security updates'),
       ],
-      '#description' => $this->t(
-        'You can choose to send email only if a security update is available, or to be notified about all newer versions. If there are updates available of Drupal core or any of your installed modules and themes, your site will always print a message on the <a href=":status_report">status report</a> page. If there is a security update, an error message will be printed on administration pages for users with <a href=":update_permissions">permission to view update notifications</a>.',
-        [
-          ':status_report' => Url::fromRoute('system.status')->toString(),
-          ':update_permissions' => Url::fromRoute('user.admin_permissions', [], ['fragment' => 'module-update'])
-            ->toString(),
-        ]
-      ),
+      '#description' => $this->t('You can choose to send email only if a security update is available, or to be notified about all newer versions. If there are updates available of Drupal core or any of your installed modules and themes, your site will always print a message on the <a href=":status_report">status report</a> page, and will also display an error message on administration pages if there is a security update.', [':status_report' => Url::fromRoute('system.status')->toString()]),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -85,56 +94,34 @@ class UpdateSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  protected static function copyFormValuesToConfig(Config $config, FormStateInterface $form_state): void {
-    switch ($config->getName()) {
-      case 'update.settings':
-        $config
-          ->set('check.disabled_extensions', $form_state->getValue('update_check_disabled'))
-          ->set('check.interval_days', $form_state->getValue('update_check_frequency'))
-          ->set('notification.emails', array_map('trim', explode("\n", trim($form_state->getValue('update_notify_emails', '')))))
-          ->set('notification.threshold', $form_state->getValue('update_notification_threshold'));
-        break;
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected static function mapConfigKeyToFormElementName(string $config_name, string $key): string {
-    switch ($config_name) {
-      case 'update.settings':
-        // A `type: sequence` of emails is mapped to a single textarea. Property
-        // paths are `notification.emails.0`, `notification.emails.1`, etc.
-        if (str_starts_with($key, 'notification.emails.')) {
-          return 'update_notify_emails';
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $form_state->set('notify_emails', []);
+    if (!$form_state->isValueEmpty('update_notify_emails')) {
+      $valid = [];
+      $invalid = [];
+      foreach (explode("\n", trim($form_state->getValue('update_notify_emails'))) as $email) {
+        $email = trim($email);
+        if (!empty($email)) {
+          if ($this->emailValidator->isValid($email)) {
+            $valid[] = $email;
+          }
+          else {
+            $invalid[] = $email;
+          }
         }
-
-        return match ($key) {
-        'check.disabled_extensions' => 'update_check_disabled',
-          'check.interval_days' => 'update_check_frequency',
-          'notification.emails' => 'update_notify_emails',
-          'notification.threshold' => 'update_notification_threshold',
-          default => self::defaultMapConfigKeyToFormElementName($config_name, $key),
-        };
-
-        default:
-          throw new \InvalidArgumentException();
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function formatMultipleViolationsMessage(string $form_element_name, array $violations): TranslatableMarkup {
-    if ($form_element_name !== 'update_notify_emails') {
-      return parent::formatMultipleViolationsMessage($form_element_name, $violations);
+      }
+      if (empty($invalid)) {
+        $form_state->set('notify_emails', $valid);
+      }
+      elseif (count($invalid) == 1) {
+        $form_state->setErrorByName('update_notify_emails', $this->t('%email is not a valid email address.', ['%email' => reset($invalid)]));
+      }
+      else {
+        $form_state->setErrorByName('update_notify_emails', $this->t('%emails are not valid email addresses.', ['%emails' => implode(', ', $invalid)]));
+      }
     }
 
-    $invalid_email_addresses = [];
-    foreach ($violations as $violation) {
-      $invalid_email_addresses[] = $violation->getInvalidValue();
-    }
-    return $this->t('%emails are not valid email addresses.', ['%emails' => implode(', ', $invalid_email_addresses)]);
+    parent::validateForm($form, $form_state);
   }
 
   /**
@@ -147,6 +134,13 @@ class UpdateSettingsForm extends ConfigFormBase {
     if ($form_state->getValue('update_check_disabled') != $config->get('check.disabled_extensions')) {
       update_storage_clear();
     }
+
+    $config
+      ->set('check.disabled_extensions', $form_state->getValue('update_check_disabled'))
+      ->set('check.interval_days', $form_state->getValue('update_check_frequency'))
+      ->set('notification.emails', $form_state->get('notify_emails'))
+      ->set('notification.threshold', $form_state->getValue('update_notification_threshold'))
+      ->save();
 
     parent::submitForm($form, $form_state);
   }

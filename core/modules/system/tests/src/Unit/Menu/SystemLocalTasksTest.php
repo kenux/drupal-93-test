@@ -2,8 +2,6 @@
 
 namespace Drupal\Tests\system\Unit\Menu;
 
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\Extension;
 use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
 
@@ -17,7 +15,7 @@ class SystemLocalTasksTest extends LocalTaskIntegrationTestBase {
   /**
    * The mocked theme handler.
    *
-   * @var \Drupal\Core\Extension\ThemeHandlerInterface
+   * @var \Drupal\Core\Extension\ThemeHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $themeHandler;
 
@@ -33,33 +31,19 @@ class SystemLocalTasksTest extends LocalTaskIntegrationTestBase {
 
     $this->themeHandler = $this->createMock('Drupal\Core\Extension\ThemeHandlerInterface');
 
-    $theme = new Extension($this->root, 'theme', 'core/themes/olivero', 'olivero.info.yml');
+    $theme = new Extension($this->root, 'theme', 'core/themes/bartik', 'bartik.info.yml');
     $theme->status = 1;
-    $theme->info = ['name' => 'olivero'];
+    $theme->info = ['name' => 'bartik'];
     $this->themeHandler->expects($this->any())
       ->method('listInfo')
-      ->willReturn([
-        'olivero' => $theme,
-      ]);
+      ->will($this->returnValue([
+        'bartik' => $theme,
+      ]));
     $this->themeHandler->expects($this->any())
       ->method('hasUi')
-      ->with('olivero')
+      ->with('bartik')
       ->willReturn(TRUE);
     $this->container->set('theme_handler', $this->themeHandler);
-
-    $fooEntityDefinition = $this->createMock(EntityTypeInterface::class);
-    $fooEntityDefinition
-      ->expects($this->once())
-      ->method('hasLinkTemplate')
-      ->with('version-history')
-      ->will($this->returnValue(TRUE));
-    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
-    $entityTypeManager->expects($this->any())
-      ->method('getDefinitions')
-      ->willReturn([
-        'foo' => $fooEntityDefinition,
-      ]);
-    $this->container->set('entity_type.manager', $entityTypeManager);
   }
 
   /**
@@ -81,13 +65,7 @@ class SystemLocalTasksTest extends LocalTaskIntegrationTestBase {
         'system.theme_settings_theme',
         [
           ['system.themes_page', 'system.theme_settings'],
-          ['system.theme_settings_global', 'system.theme_settings_theme:olivero'],
-        ],
-      ],
-      [
-        'entity.foo.version_history',
-        [
-          ['entity.version_history:foo.version_history'],
+          ['system.theme_settings_global', 'system.theme_settings_theme:bartik'],
         ],
       ],
     ];

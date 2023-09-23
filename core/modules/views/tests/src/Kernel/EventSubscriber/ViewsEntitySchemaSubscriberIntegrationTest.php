@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\views\Kernel\EventSubscriber;
 
-use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeEvent;
 use Drupal\Core\Entity\EntityTypeEvents;
 use Drupal\Tests\system\Functional\Entity\Traits\EntityDefinitionTestTrait;
@@ -81,12 +80,12 @@ class ViewsEntitySchemaSubscriberIntegrationTest extends ViewsKernelTestBase {
     $this->entityTypeManager = $this->container->get('entity_type.manager');
     $this->state = $this->container->get('state');
 
+    $this->database = $this->container->get('database');
+
     // Install every entity type's schema that wasn't installed in the parent
     // method.
     foreach (array_diff_key($this->entityTypeManager->getDefinitions(), array_flip(['user', 'entity_test'])) as $entity_type_id => $entity_type) {
-      if ($entity_type instanceof ContentEntityTypeInterface) {
-        $this->installEntitySchema($entity_type_id);
-      }
+      $this->installEntitySchema($entity_type_id);
     }
   }
 

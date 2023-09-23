@@ -19,11 +19,13 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
+    'aggregator',
     'book',
     'config_translation',
     'content_translation',
     'datetime_range',
     'file',
+    'forum',
     'language',
     'migrate_drupal_ui',
     'statistics',
@@ -50,12 +52,14 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
    */
   protected function getAvailablePaths() {
     return [
+      'Aggregator',
       'Block',
       'Block languages',
       'Book',
       'Bulk Export',
       'Chaos Tools (CTools) AJAX Example',
       'Chaos tools',
+      'Color',
       'Comment',
       'Contact',
       'Custom content panes',
@@ -81,6 +85,7 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
       'Field SQL storage',
       'File',
       'Filter',
+      'Forum',
       'Image',
       'Internationalization',
       'Link',
@@ -101,6 +106,7 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
       'Phone',
       'Poll',
       'Profile',
+      'RDF',
       'Search',
       'Search embedded form',
       'Shortcut',
@@ -150,20 +156,16 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
    */
   protected function getMissingPaths() {
     return [
-      'Aggregator',
       'Breakpoints',
-      'Color',
       'Contact translation',
       'Entity Translation Menu',
       'Entity Translation Upgrade',
       'FlexSlider Picture',
-      'Forum',
       'Multilingual content',
       'Multilingual forum',
       'Multilingual select',
       'Path translation',
       'Picture',
-      'RDF',
       'References',
       'References UUID',
       'Translation redirect',
@@ -179,7 +181,6 @@ class NoMultilingualReviewPageTest extends NoMultilingualReviewPageTestBase {
       // These modules are in the missing path list because they are installed
       // on the source site but they are not installed on the destination site.
       'Syslog',
-      // @todo Remove tracker in https://www.drupal.org/project/drupal/issues/3261452
       'Tracker',
       'Update manager',
     ];

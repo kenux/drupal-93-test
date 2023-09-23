@@ -54,13 +54,10 @@ class TranslationWebTest extends FieldTestBase {
    */
   protected $field;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
-    $this->fieldName = $this->randomMachineName() . '_field_name';
+    $this->fieldName = mb_strtolower($this->randomMachineName() . '_field_name');
 
     $field_storage = [
       'field_name' => $this->fieldName,
@@ -132,17 +129,14 @@ class TranslationWebTest extends FieldTestBase {
   }
 
   /**
-   * Tests translation revisions.
-   *
    * Check if the field translation attached to the entity revision identified
    * by the passed arguments were correctly stored.
    */
   private function checkTranslationRevisions($id, $revision_id, $available_langcodes) {
     $field_name = $this->fieldStorage->getName();
-    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
-    $storage = $this->container->get('entity_type.manager')
-      ->getStorage($this->entityTypeId);
-    $entity = $storage->loadRevision($revision_id);
+    $entity = $this->container->get('entity_type.manager')
+      ->getStorage($this->entityTypeId)
+      ->loadRevision($revision_id);
     foreach ($available_langcodes as $langcode => $value) {
       $passed = $entity->getTranslation($langcode)->{$field_name}->value == $value + 1;
       $this->assertTrue($passed, new FormattableMarkup('The @language translation for revision @revision was correctly stored', ['@language' => $langcode, '@revision' => $entity->getRevisionId()]));

@@ -54,7 +54,6 @@ class UrlHelperTest extends TestCase {
       'example.com',
       'www.example.com',
       'ex-ample.com',
-      // cspell:disable-next-line
       '3xampl3.com',
       'example.com/parenthesis',
       'example.com/index.html#pagetop',
@@ -83,7 +82,7 @@ class UrlHelperTest extends TestCase {
    * @covers ::isValid
    *
    * @param string $url
-   *   The URL to test.
+   *   The url to test.
    * @param string $scheme
    *   The scheme to test.
    */
@@ -108,37 +107,13 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Tests that we get the same thing out that we put in.
-   */
-  public function testCompressUncompress() {
-    $data = [];
-    while (count($data) < 30) {
-      $data[] = 'drupal/drupal' . count($data);
-    }
-    $data = implode(',', $data);
-    $compressed = UrlHelper::compressQueryParameter($data);
-    $uncompressed = UrlHelper::uncompressQueryParameter($compressed);
-    $this->assertEquals($data, $uncompressed);
-    $this->assertLessThan(strlen($uncompressed), strlen($compressed));
-  }
-
-  /**
-   * Tests passing an invalid string as a compressed query parameter.
-   */
-  public function testUncompressInvalidString() {
-    // Pass an invalid string to ::uncompressQueryParameter() and ensure it
-    // doesn't result in a PHP warning.
-    $this->assertFalse(UrlHelper::uncompressQueryParameter('llama'));
-  }
-
-  /**
    * Tests invalid absolute URLs.
    *
    * @dataProvider providerTestInvalidAbsolute
    * @covers ::isValid
    *
    * @param string $url
-   *   The URL to test.
+   *   The url to test.
    * @param string $scheme
    *   The scheme to test.
    */
@@ -172,7 +147,7 @@ class UrlHelperTest extends TestCase {
    * @covers ::isValid
    *
    * @param string $url
-   *   The URL to test.
+   *   The url to test.
    * @param string $prefix
    *   The prefix to test.
    */
@@ -189,7 +164,6 @@ class UrlHelperTest extends TestCase {
    */
   public function providerTestInvalidRelativeData() {
     $data = [
-      // cspell:disable-next-line
       'ex^mple',
       'example<>',
       'ex%ample',
@@ -204,7 +178,7 @@ class UrlHelperTest extends TestCase {
    * @covers ::isValid
    *
    * @param string $url
-   *   The URL to test.
+   *   The url to test.
    * @param string $prefix
    *   The prefix to test.
    */
@@ -256,7 +230,7 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Tests URL parsing.
+   * Tests url parsing.
    *
    * @dataProvider providerTestParse
    * @covers ::parse
@@ -432,14 +406,14 @@ class UrlHelperTest extends TestCase {
       ['https://example.com/external/path', TRUE],
       ['javascript://fake-external-path', FALSE],
       // External URL without an explicit protocol.
-      ['//www.example.com/foo/bar?foo=bar&bar=baz&baz#foo', TRUE],
+      ['//www.drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE],
       // Internal URL starting with a slash.
-      ['/www.example.com', FALSE],
+      ['/www.drupal.org', FALSE],
       // Simple external URLs.
       ['http://example.com', TRUE],
       ['https://example.com', TRUE],
-      ['http://example.com/foo/bar?foo=bar&bar=baz&baz#foo', TRUE],
-      ['//example.com', TRUE],
+      ['http://drupal.org/foo/bar?foo=bar&bar=baz&baz#foo', TRUE],
+      ['//drupal.org', TRUE],
       // Some browsers ignore or strip leading control characters.
       ["\x00//www.example.com", TRUE],
       ["\x08//www.example.com", TRUE],
@@ -457,7 +431,7 @@ class UrlHelperTest extends TestCase {
       ['/system/ajax', FALSE],
       ['?q=foo:bar', FALSE],
       ['node/edit:me', FALSE],
-      ['/example.com', FALSE],
+      ['/drupal.org', FALSE],
       ['<front>', FALSE],
     ];
   }
@@ -475,8 +449,6 @@ class UrlHelperTest extends TestCase {
    *   Expected escaped value.
    * @param array $protocols
    *   Protocols to allow.
-   *
-   * @runInSeparateProcess
    */
   public function testFilterBadProtocol($uri, $expected, $protocols) {
     UrlHelper::setAllowedProtocols($protocols);
@@ -504,7 +476,7 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Tests dangerous URL protocol filtering.
+   * Tests dangerous url protocol filtering.
    *
    * @dataProvider providerTestStripDangerousProtocols
    * @covers ::setAllowedProtocols
@@ -516,8 +488,6 @@ class UrlHelperTest extends TestCase {
    *   Expected escaped value.
    * @param array $protocols
    *   Protocols to allow.
-   *
-   * @runInSeparateProcess
    */
   public function testStripDangerousProtocols($uri, $expected, $protocols) {
     UrlHelper::setAllowedProtocols($protocols);
@@ -543,10 +513,10 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Enhances test URLs with schemes.
+   * Enhances test urls with schemes.
    *
    * @param array $urls
-   *   The list of URLs.
+   *   The list of urls.
    *
    * @return array
    *   A list of provider data with schemes.
@@ -563,10 +533,10 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Enhances test URLs with prefixes.
+   * Enhances test urls with prefixes.
    *
    * @param array $urls
-   *   The list of URLs.
+   *   The list of urls.
    *
    * @return array
    *   A list of provider data with prefixes.
@@ -583,15 +553,15 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Tests detecting external URLs that point to local resources.
+   * Tests detecting external urls that point to local resources.
    *
    * @param string $url
-   *   The external URL to test.
+   *   The external url to test.
    * @param string $base_url
-   *   The base URL.
+   *   The base url.
    * @param bool $expected
    *   TRUE if an external URL points to this installation as determined by the
-   *   base URL.
+   *   base url.
    *
    * @covers ::externalIsLocal
    * @dataProvider providerTestExternalIsLocal
@@ -601,7 +571,7 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Provider for local external URL detection.
+   * Provider for local external url detection.
    *
    * @see \Drupal\Tests\Component\Utility\UrlHelperTest::testExternalIsLocal()
    */
@@ -638,12 +608,12 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Tests invalid URL arguments.
+   * Tests invalid url arguments.
    *
    * @param string $url
-   *   The URL to test.
+   *   The url to test.
    * @param string $base_url
-   *   The base URL.
+   *   The base url.
    *
    * @covers ::externalIsLocal
    * @dataProvider providerTestExternalIsLocalInvalid
@@ -654,7 +624,7 @@ class UrlHelperTest extends TestCase {
   }
 
   /**
-   * Provides invalid argument data for local external URL detection.
+   * Provides invalid argument data for local external url detection.
    *
    * @see \Drupal\Tests\Component\Utility\UrlHelperTest::testExternalIsLocalInvalid()
    */
@@ -663,7 +633,7 @@ class UrlHelperTest extends TestCase {
       ['http://example.com/foo', ''],
       ['http://example.com/foo', 'bar'],
       ['http://example.com/foo', 'http://'],
-      // Invalid destination URLs.
+      // Invalid destination urls.
       ['', 'http://example.com/foo'],
       ['bar', 'http://example.com/foo'],
       ['/bar', 'http://example.com/foo'],

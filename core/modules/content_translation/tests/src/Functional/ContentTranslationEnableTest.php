@@ -7,8 +7,6 @@ use Drupal\Tests\BrowserTestBase;
 /**
  * Test enabling content translation module.
  *
- * @covers \Drupal\language\Form\ContentLanguageSettingsForm
- * @covers ::_content_translation_form_language_content_settings_form_alter
  * @group content_translation
  */
 class ContentTranslationEnableTest extends BrowserTestBase {
@@ -38,8 +36,8 @@ class ContentTranslationEnableTest extends BrowserTestBase {
     $this->submitForm($edit, 'Install');
 
     // Status messages are shown.
-    $this->assertSession()->statusMessageContains('This site has only a single language enabled. Add at least one more language in order to translate content.', 'warning');
-    $this->assertSession()->statusMessageContains('Enable translation for content types, taxonomy vocabularies, accounts, or any other element you wish to translate.', 'warning');
+    $this->assertSession()->pageTextContains('This site has only a single language enabled. Add at least one more language in order to translate content.');
+    $this->assertSession()->pageTextContains('Enable translation for content types, taxonomy vocabularies, accounts, or any other element you wish to translate.');
 
     // No pending updates should be available.
     $this->drupalGet('admin/reports/status');
@@ -70,7 +68,7 @@ class ContentTranslationEnableTest extends BrowserTestBase {
       'type' => 'foo',
     ];
     $this->drupalGet('admin/structure/types/add');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save content type');
     $this->drupalGet('admin/config/regional/content-language');
     $this->assertSession()->responseContains('entity_types[node]');
   }

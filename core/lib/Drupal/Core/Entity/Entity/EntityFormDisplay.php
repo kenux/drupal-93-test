@@ -13,10 +13,8 @@ use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
- * Configuration entity.
- *
- * Contains widget options for all components of an entity form in a given
- * form mode.
+ * Configuration entity that contains widget options for all components of an
+ * entity form in a given form mode.
  *
  * @ConfigEntityType(
  *   id = "entity_form_display",
@@ -35,9 +33,6 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
  *     "mode",
  *     "content",
  *     "hidden",
- *   },
- *   constraints = {
- *     "ImmutableProperties" = {"id", "targetEntityType", "bundle", "mode"},
  *   }
  * )
  */

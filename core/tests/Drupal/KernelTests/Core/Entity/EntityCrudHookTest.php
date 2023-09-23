@@ -16,8 +16,6 @@ use Drupal\user\Entity\User;
 use Drupal\file\Entity\File;
 
 /**
- * Tests entity CRUD via hooks.
- *
  * Tests the invocation of hooks when creating, inserting, loading, updating or
  * deleting an entity.
  *
@@ -54,9 +52,6 @@ class EntityCrudHookTest extends EntityKernelTestBase {
 
   protected $ids = [];
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -65,7 +60,6 @@ class EntityCrudHookTest extends EntityKernelTestBase {
     $this->installSchema('node', ['node_access']);
     $this->installSchema('comment', ['comment_entity_statistics']);
     $this->installConfig(['node', 'comment']);
-    $this->container->get('theme_installer')->install(['stark']);
   }
 
   /**

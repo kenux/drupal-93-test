@@ -28,7 +28,7 @@ class NodeTypeTest extends NodeTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
   /**
    * Ensures that node type functions (node_type_get_*) work correctly.
@@ -78,7 +78,7 @@ class NodeTypeTest extends NodeTestBase {
     $this->drupalGet('node/add');
     $this->assertSession()->responseHeaderContains('X-Drupal-Cache-Tags', 'config:node_type_list');
     $this->assertCacheContext('user.permissions');
-    $elements = $this->cssSelect('dl dt');
+    $elements = $this->cssSelect('dl.node-type-list dt');
     $this->assertCount(3, $elements);
 
     $edit = [
@@ -88,15 +88,11 @@ class NodeTypeTest extends NodeTestBase {
     ];
     $this->drupalGet('admin/structure/types/add');
     $this->submitForm($edit, 'Save and manage fields');
-
-    // Asserts that form submit redirects to the expected manage fields page.
-    $this->assertSession()->addressEquals('admin/structure/types/manage/' . $edit['name'] . '/fields');
-
     $type_exists = (bool) NodeType::load('foo');
     $this->assertTrue($type_exists, 'The new content type has been created in the database.');
 
     $this->drupalGet('node/add');
-    $elements = $this->cssSelect('dl dt');
+    $elements = $this->cssSelect('dl.node-type-list dt');
     $this->assertCount(4, $elements);
   }
 
@@ -126,7 +122,7 @@ class NodeTypeTest extends NodeTestBase {
       'title_label' => 'Foo',
     ];
     $this->drupalGet('admin/structure/types/manage/page');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save content type');
 
     $this->drupalGet('node/add/page');
     $assert->pageTextContains('Foo');
@@ -138,7 +134,7 @@ class NodeTypeTest extends NodeTestBase {
       'description' => 'Lorem ipsum.',
     ];
     $this->drupalGet('admin/structure/types/manage/page');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save content type');
 
     $this->drupalGet('node/add');
     $assert->pageTextContains('Bar');
@@ -163,7 +159,7 @@ class NodeTypeTest extends NodeTestBase {
     $this->submitForm([], 'Delete');
     // Resave the settings for this type.
     $this->drupalGet('admin/structure/types/manage/page');
-    $this->submitForm([], 'Save');
+    $this->submitForm([], 'Save content type');
     $front_page_path = Url::fromRoute('<front>')->toString();
     $this->assertBreadcrumb('admin/structure/types/manage/page/fields', [
       $front_page_path => 'Home',
@@ -229,21 +225,19 @@ class NodeTypeTest extends NodeTestBase {
   }
 
   /**
-   * Tests operations from Field UI and User modules for content types.
+   * Tests Field UI integration for content types.
    */
-  public function testNodeTypeOperations() {
+  public function testNodeTypeFieldUiPermissions() {
     // Create an admin user who can only manage node fields.
     $admin_user_1 = $this->drupalCreateUser([
       'administer content types',
       'administer node fields',
-      'administer permissions',
     ]);
     $this->drupalLogin($admin_user_1);
 
     // Test that the user only sees the actions available to them.
     $this->drupalGet('admin/structure/types');
     $this->assertSession()->linkByHrefExists('admin/structure/types/manage/article/fields');
-    $this->assertSession()->linkByHrefExists('admin/structure/types/manage/article/permissions');
     $this->assertSession()->linkByHrefNotExists('admin/structure/types/manage/article/display');
 
     // Create another admin user who can manage node fields display.
@@ -256,7 +250,6 @@ class NodeTypeTest extends NodeTestBase {
     // Test that the user only sees the actions available to them.
     $this->drupalGet('admin/structure/types');
     $this->assertSession()->linkByHrefNotExists('admin/structure/types/manage/article/fields');
-    $this->assertSession()->linkByHrefNotExists('admin/structure/types/manage/article/permissions');
     $this->assertSession()->linkByHrefExists('admin/structure/types/manage/article/display');
   }
 

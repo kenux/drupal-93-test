@@ -13,8 +13,6 @@ use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\node\Entity\NodeType;
 use Drupal\Tests\BrowserTestBase;
 
-// cspell:ignore viewsviewfiles
-
 /**
  * Translate settings and entities to various languages.
  *
@@ -80,9 +78,6 @@ class ConfigTranslationUiTest extends BrowserTestBase {
    */
   protected $localeStorage;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     $translator_permissions = [
@@ -648,7 +643,8 @@ class ConfigTranslationUiTest extends BrowserTestBase {
   }
 
   /**
-   * Tests plural source elements in configuration translation forms.
+   * Tests the number of source elements for plural strings in config
+   * translation forms.
    */
   public function testPluralConfigStringsSourceElements() {
     $this->drupalLogin($this->adminUser);
@@ -746,7 +742,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
   public function testFieldConfigTranslation() {
     // Add a test field which has a translatable field setting and a
     // translatable field storage setting.
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $field_storage = FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -757,7 +753,7 @@ class ConfigTranslationUiTest extends BrowserTestBase {
     $field_storage->setSetting('translatable_storage_setting', $translatable_storage_setting);
     $field_storage->save();
 
-    $bundle = $this->randomMachineName();
+    $bundle = strtolower($this->randomMachineName());
     entity_test_create_bundle($bundle);
     $field = FieldConfig::create([
       'field_name' => $field_name,
@@ -785,14 +781,14 @@ class ConfigTranslationUiTest extends BrowserTestBase {
    */
   public function testBooleanFieldConfigTranslation() {
     // Add a test boolean field.
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
       'type' => 'boolean',
     ])->save();
 
-    $bundle = $this->randomMachineName();
+    $bundle = strtolower($this->randomMachineName());
     entity_test_create_bundle($bundle);
     $field = FieldConfig::create([
       'field_name' => $field_name,
@@ -1162,6 +1158,25 @@ class ConfigTranslationUiTest extends BrowserTestBase {
     $this->drupalGet('admin/config/system/site-information');
     $this->submitForm($edit, 'Save configuration');
     $this->assertSession()->pageTextContains('The configuration options have been saved.');
+  }
+
+  /**
+   * Get server-rendered contextual links for the given contextual link ids.
+   *
+   * @param array $ids
+   *   An array of contextual link ids.
+   * @param string $current_path
+   *   The Drupal path for the page for which the contextual links are rendered.
+   *
+   * @return string
+   *   The response body.
+   */
+  protected function renderContextualLinks($ids, $current_path) {
+    $post = [];
+    for ($i = 0; $i < count($ids); $i++) {
+      $post['ids[' . $i . ']'] = $ids[$i];
+    }
+    return $this->drupalPostWithFormat('contextual/render', 'json', $post, ['query' => ['destination' => $current_path]]);
   }
 
   /**

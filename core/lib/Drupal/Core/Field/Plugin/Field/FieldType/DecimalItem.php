@@ -6,7 +6,6 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\DataDefinition;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Defines the 'decimal' field type.
@@ -14,13 +13,8 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * @FieldType(
  *   id = "decimal",
  *   label = @Translation("Number (decimal)"),
- *   description = {
- *     @Translation("Ideal for exact counts and measures (prices, temperatures, distances, volumes, etc.)"),
- *     @Translation("Stores a number in the database in a fixed decimal format"),
- *     @Translation("For example, 12.34 km or € when used for further detailed calculations (such as summing many of these)"),
- *   },
- *   category = "number",
- *   weight = -30,
+ *   description = @Translation("This field stores a number in the database in a fixed decimal format."),
+ *   category = @Translation("Number"),
  *   default_widget = "number",
  *   default_formatter = "number_decimal"
  * )
@@ -41,8 +35,8 @@ class DecimalItem extends NumericItemBase {
    * {@inheritdoc}
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
-    $properties['value'] = DataDefinition::create('decimal')
-      ->setLabel(new TranslatableMarkup('Decimal value'))
+    $properties['value'] = DataDefinition::create('string')
+      ->setLabel(t('Decimal value'))
       ->setRequired(TRUE);
 
     return $properties;
@@ -72,25 +66,43 @@ class DecimalItem extends NumericItemBase {
 
     $element['precision'] = [
       '#type' => 'number',
-      '#title' => $this->t('Precision'),
+      '#title' => t('Precision'),
       '#min' => 10,
       '#max' => 32,
       '#default_value' => $settings['precision'],
-      '#description' => $this->t('The total number of digits to store in the database, including those to the right of the decimal.'),
+      '#description' => t('The total number of digits to store in the database, including those to the right of the decimal.'),
       '#disabled' => $has_data,
     ];
 
     $element['scale'] = [
       '#type' => 'number',
-      '#title' => $this->t('Scale', [], ['context' => 'decimal places']),
+      '#title' => t('Scale', [], ['context' => 'decimal places']),
       '#min' => 0,
       '#max' => 10,
       '#default_value' => $settings['scale'],
-      '#description' => $this->t('The number of digits to the right of the decimal.'),
+      '#description' => t('The number of digits to the right of the decimal.'),
       '#disabled' => $has_data,
     ];
 
     return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getConstraints() {
+    $constraint_manager = \Drupal::typedDataManager()->getValidationConstraintManager();
+    $constraints = parent::getConstraints();
+
+    $constraints[] = $constraint_manager->create('ComplexData', [
+      'value' => [
+        'Regex' => [
+          'pattern' => '/^[+-]?((\d+(\.\d*)?)|(\.\d+))$/i',
+        ],
+      ],
+    ]);
+
+    return $constraints;
   }
 
   /**

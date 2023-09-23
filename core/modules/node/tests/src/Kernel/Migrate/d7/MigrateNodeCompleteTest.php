@@ -34,6 +34,8 @@ class MigrateNodeCompleteTest extends MigrateDrupal7TestBase {
     'language',
     'link',
     'menu_ui',
+    // Required for translation migrations.
+    'migrate_drupal_multilingual',
     'node',
     'taxonomy',
     'telephone',
@@ -43,7 +45,7 @@ class MigrateNodeCompleteTest extends MigrateDrupal7TestBase {
   /**
    * The entity storage for node.
    *
-   * @var \Drupal\Core\Entity\RevisionableStorageInterface
+   * @var \Drupal\Core\Entity\EntityStorageInterface
    */
   protected $nodeStorage;
 
@@ -62,6 +64,7 @@ class MigrateNodeCompleteTest extends MigrateDrupal7TestBase {
     $this->installEntitySchema('taxonomy_term');
     $this->installSchema('comment', ['comment_entity_statistics']);
     $this->installSchema('node', ['node_access']);
+    $this->installSchema('system', ['sequences']);
 
     $this->createContent();
 

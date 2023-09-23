@@ -5,7 +5,8 @@ namespace Drupal\Tests\node\Functional;
 use Drupal\node\Entity\NodeType;
 
 /**
- * Tests node access rebuild functions with multiple node access modules.
+ * Ensures that node access rebuild functions work correctly even
+ * when other modules implements hook_node_grants().
  *
  * @group node
  */
@@ -40,7 +41,6 @@ class NodeAccessRebuildNodeGrantsTest extends NodeTestBase {
       'administer site configuration',
       'access administration pages',
       'access site reports',
-      'administer nodes',
     ]);
     $this->drupalLogin($this->adminUser);
 

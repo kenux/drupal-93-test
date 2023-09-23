@@ -59,9 +59,6 @@ class EntityQueryRelationshipTest extends EntityKernelTestBase {
    */
   protected $queryResults;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -70,18 +67,17 @@ class EntityQueryRelationshipTest extends EntityKernelTestBase {
     // We want an entity reference field. It needs a vocabulary, terms, a field
     // storage and a field. First, create the vocabulary.
     $vocabulary = Vocabulary::create([
-      'vid' => $this->randomMachineName(),
-      'name' => 'Tags',
+      'vid' => mb_strtolower($this->randomMachineName()),
     ]);
     $vocabulary->save();
 
     // Second, create the field.
     entity_test_create_bundle('test_bundle');
-    $this->fieldName = $this->randomMachineName();
+    $this->fieldName = strtolower($this->randomMachineName());
     $handler_settings = [
       'target_bundles' => [
         $vocabulary->id() => $vocabulary->id(),
-      ],
+       ],
       'auto_create' => TRUE,
     ];
     $this->createEntityReferenceField('entity_test', 'test_bundle', $this->fieldName, NULL, 'taxonomy_term', 'default', $handler_settings);

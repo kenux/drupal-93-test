@@ -38,10 +38,7 @@ abstract class UserKernelTestBase extends ViewsKernelTestBase {
    */
   protected $userStorage;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE): void {
+  protected function setUp($import_test_views = TRUE) {
     parent::setUp();
 
     ViewTestData::createTestViews(static::class, ['user_test_views']);

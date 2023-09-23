@@ -44,13 +44,6 @@ class MediaLibraryWidgetTest extends KernelTestBase {
   protected $adminUser;
 
   /**
-   * The base field definition.
-   *
-   * @var \Drupal\Core\Field\BaseFieldDefinition
-   */
-  protected BaseFieldDefinition $baseField;
-
-  /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
@@ -70,6 +63,7 @@ class MediaLibraryWidgetTest extends KernelTestBase {
     $this->installEntitySchema('entity_test');
     $this->installEntitySchema('entity_test_rev');
     $this->installEntitySchema('user');
+    $this->installSchema('system', ['sequences']);
     $this->installConfig([
       'system',
       'image',

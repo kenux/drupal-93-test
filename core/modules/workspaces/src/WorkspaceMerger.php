@@ -5,8 +5,6 @@ namespace Drupal\workspaces;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Utility\Error;
-use Psr\Log\LoggerInterface;
 
 /**
  * Default implementation of the workspace merger.
@@ -72,20 +70,14 @@ class WorkspaceMerger implements WorkspaceMergerInterface {
    *   The source workspace.
    * @param \Drupal\workspaces\WorkspaceInterface $target
    *   The target workspace.
-   * @param \Psr\Log\LoggerInterface|null $logger
-   *   The logger.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, WorkspaceAssociationInterface $workspace_association, CacheTagsInvalidatorInterface $cache_tags_invalidator, WorkspaceInterface $source, WorkspaceInterface $target, protected ?LoggerInterface $logger = NULL) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, WorkspaceAssociationInterface $workspace_association, CacheTagsInvalidatorInterface $cache_tags_invalidator, WorkspaceInterface $source, WorkspaceInterface $target) {
     $this->entityTypeManager = $entity_type_manager;
     $this->database = $database;
     $this->workspaceAssociation = $workspace_association;
     $this->cacheTagsInvalidator = $cache_tags_invalidator;
     $this->sourceWorkspace = $source;
     $this->targetWorkspace = $target;
-    if ($this->logger === NULL) {
-      @trigger_error('Calling ' . __METHOD__ . '() without the $logger argument is deprecated in drupal:10.1.0 and it will be required in drupal:11.0.0. See https://www.drupal.org/node/2932520', E_USER_DEPRECATED);
-      $this->logger = \Drupal::service('logger.channel.workspaces');
-    }
   }
 
   /**
@@ -100,8 +92,8 @@ class WorkspaceMerger implements WorkspaceMergerInterface {
       throw new WorkspaceConflictException();
     }
 
+    $transaction = $this->database->startTransaction();
     try {
-      $transaction = $this->database->startTransaction();
       foreach ($this->getDifferringRevisionIdsOnSource() as $entity_type_id => $revision_difference) {
         $revisions_on_source = $this->entityTypeManager->getStorage($entity_type_id)
           ->loadMultipleRevisions(array_keys($revision_difference));
@@ -121,10 +113,8 @@ class WorkspaceMerger implements WorkspaceMergerInterface {
       }
     }
     catch (\Exception $e) {
-      if (isset($transaction)) {
-        $transaction->rollBack();
-      }
-      Error::logException($this->logger, $e);
+      $transaction->rollBack();
+      watchdog_exception('workspaces', $e);
       throw $e;
     }
   }

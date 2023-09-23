@@ -103,7 +103,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
     $query = $this->view->getRequest()->query;
     $order = $query->get('order');
     if (!isset($order)) {
-      // check for a 'default' clickSort. If there isn't one, exit gracefully.
+      // check for a 'default' clicksort. If there isn't one, exit gracefully.
       if (empty($this->options['default'])) {
         return;
       }
@@ -140,8 +140,6 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
   }
 
   /**
-   * Sanitizes the columns.
-   *
    * Normalize a list of columns based upon the fields that are
    * available. This compares the fields stored in the style handler
    * to the list of fields actually in the view, removing fields that
@@ -170,7 +168,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
     if ($fields === NULL) {
       $fields = $this->displayHandler->getOption('fields');
     }
-    // Pre-configure the sanitized array so that the order is retained.
+    // Preconfigure the sanitized array so that the order is retained.
     foreach ($fields as $field => $info) {
       // Set to itself so that if it isn't touched, it gets column
       // status automatically.
@@ -338,7 +336,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
           'views-align-left' => $this->t('Left', [], ['context' => 'Text alignment']),
           'views-align-center' => $this->t('Center', [], ['context' => 'Text alignment']),
           'views-align-right' => $this->t('Right', [], ['context' => 'Text alignment']),
-        ],
+          ],
         '#states' => [
           'visible' => [
             $column_selector => ['value' => $field],
@@ -435,7 +433,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
   public function getCacheContexts() {
     $contexts = [];
 
-    foreach ($this->options['info'] as $info) {
+    foreach ($this->options['info'] as $field_id => $info) {
       if (!empty($info['sortable'])) {
         // The rendered link needs to play well with any other query parameter
         // used on the page, like pager and exposed filter.

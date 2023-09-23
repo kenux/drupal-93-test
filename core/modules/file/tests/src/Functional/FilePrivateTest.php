@@ -25,9 +25,6 @@ class FilePrivateTest extends FileFieldTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     node_access_test_add_field(NodeType::load('article'));
@@ -47,7 +44,7 @@ class FilePrivateTest extends FileFieldTestBase {
     /** @var \Drupal\Core\File\FileSystemInterface $file_system */
     $file_system = \Drupal::service('file_system');
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name, ['uri_scheme' => 'private']);
 
     $test_file = $this->getTestFile('text');

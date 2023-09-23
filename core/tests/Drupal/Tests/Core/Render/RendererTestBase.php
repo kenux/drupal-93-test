@@ -11,15 +11,14 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\Context\ContextCacheKeys;
 use Drupal\Core\Cache\MemoryBackend;
-use Drupal\Core\Cache\VariationCache;
+use Drupal\Core\Http\RequestStack;
+use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\Core\Render\PlaceholderGenerator;
 use Drupal\Core\Render\PlaceholderingRenderCache;
 use Drupal\Core\Render\Renderer;
-use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Base class for the actual unit tests testing \Drupal\Core\Render\Renderer.
@@ -53,14 +52,14 @@ abstract class RendererTestBase extends UnitTestCase {
   protected $requestStack;
 
   /**
-   * @var \Drupal\Core\Cache\VariationCacheFactoryInterface|\PHPUnit\Framework\MockObject\MockObject
+   * @var \Drupal\Core\Cache\CacheFactoryInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cacheFactory;
 
   /**
    * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit\Framework\MockObject\MockObject
    */
-  protected $cacheContextsManager;
+  protected $cacheContexts;
 
   /**
    * The mocked controller resolver.
@@ -84,7 +83,7 @@ abstract class RendererTestBase extends UnitTestCase {
   protected $elementInfo;
 
   /**
-   * @var \Drupal\Core\Cache\VariationCacheInterface
+   * @var \Drupal\Core\Cache\CacheBackendInterface
    */
   protected $memoryCache;
 
@@ -110,13 +109,12 @@ abstract class RendererTestBase extends UnitTestCase {
       'contexts' => ['session', 'user'],
       'tags' => ['current-temperature'],
     ],
-    'debug' => FALSE,
   ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp(): void {
+  protected function setUp() {
     parent::setUp();
 
     $this->controllerResolver = $this->createMock('Drupal\Core\Controller\ControllerResolverInterface');
@@ -144,16 +142,11 @@ abstract class RendererTestBase extends UnitTestCase {
     $request = new Request();
     $request->server->set('REQUEST_TIME', $_SERVER['REQUEST_TIME']);
     $this->requestStack->push($request);
-    $this->cacheFactory = $this->createMock('Drupal\Core\Cache\VariationCacheFactoryInterface');
+    $this->cacheFactory = $this->createMock('Drupal\Core\Cache\CacheFactoryInterface');
     $this->cacheContextsManager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
       ->disableOriginalConstructor()
       ->getMock();
     $this->cacheContextsManager->method('assertValidTokens')->willReturn(TRUE);
-    $this->cacheContextsManager->expects($this->any())
-      ->method('optimizeTokens')
-      ->willReturnCallback(function ($context_tokens) {
-        return $context_tokens;
-      });
     $current_user_role = &$this->currentUserRole;
     $this->cacheContextsManager->expects($this->any())
       ->method('convertTokensToKeys')
@@ -177,9 +170,9 @@ abstract class RendererTestBase extends UnitTestCase {
               $keys[] = $context_id;
           }
         }
-        return new ContextCacheKeys($keys);
+        return new ContextCacheKeys($keys, new CacheableMetadata());
       });
-    $this->placeholderGenerator = new PlaceholderGenerator($this->cacheContextsManager, $this->rendererConfig);
+    $this->placeholderGenerator = new PlaceholderGenerator($this->rendererConfig);
     $this->renderCache = new PlaceholderingRenderCache($this->requestStack, $this->cacheFactory, $this->cacheContextsManager, $this->placeholderGenerator);
     $this->renderer = new Renderer($this->controllerResolver, $this->themeManager, $this->elementInfo, $this->placeholderGenerator, $this->renderCache, $this->requestStack, $this->rendererConfig);
 
@@ -221,7 +214,7 @@ abstract class RendererTestBase extends UnitTestCase {
    * Sets up a memory-based render cache back-end.
    */
   protected function setupMemoryCache() {
-    $this->memoryCache = $this->memoryCache ?: new VariationCache($this->requestStack, new MemoryBackend(), $this->cacheContextsManager);
+    $this->memoryCache = $this->memoryCache ?: new MemoryBackend();
 
     $this->cacheFactory->expects($this->atLeastOnce())
       ->method('get')
@@ -245,27 +238,27 @@ abstract class RendererTestBase extends UnitTestCase {
   /**
    * Asserts a render cache item.
    *
-   * @param string[] $keys
-   *   The expected cache keys.
+   * @param string $cid
+   *   The expected cache ID.
    * @param mixed $data
    *   The expected data for that cache ID.
    * @param string $bin
    *   The expected cache bin.
    */
-  protected function assertRenderCacheItem($keys, $data, $bin = 'render') {
+  protected function assertRenderCacheItem($cid, $data, $bin = 'render') {
     $cache_backend = $this->cacheFactory->get($bin);
-    $cached = $cache_backend->get($keys, CacheableMetadata::createFromRenderArray($data));
-    $this->assertNotFalse($cached, sprintf('Expected cache item "%s" exists.', implode(':', $keys)));
+    $cached = $cache_backend->get($cid);
+    $this->assertNotFalse($cached, sprintf('Expected cache item "%s" exists.', $cid));
     if ($cached !== FALSE) {
       $this->assertEqualsCanonicalizing(array_keys($data), array_keys($cached->data), 'The cache item contains the same parent array keys.');
       foreach ($data as $key => $value) {
         // We do not want to assert on the order of cacheability information.
         // @see https://www.drupal.org/project/drupal/issues/3225328
         if ($key === '#cache') {
-          $this->assertEqualsCanonicalizing($value, $cached->data[$key], sprintf('Cache item "%s" has the expected data.', implode(':', $keys)));
+          $this->assertEqualsCanonicalizing($value, $cached->data[$key], sprintf('Cache item "%s" has the expected data.', $cid));
         }
         else {
-          $this->assertEquals($value, $cached->data[$key], sprintf('Cache item "%s" has the expected data.', implode(':', $keys)));
+          $this->assertEquals($value, $cached->data[$key], sprintf('Cache item "%s" has the expected data.', $cid));
         }
       }
       $this->assertEqualsCanonicalizing(Cache::mergeTags($data['#cache']['tags'], ['rendered']), $cached->tags, "The cache item's cache tags also has the 'rendered' cache tag.");

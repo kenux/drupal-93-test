@@ -32,7 +32,6 @@ class TestMigrateExecutable extends MigrateExecutable {
    */
   public function setStringTranslation(TranslationInterface $string_translation) {
     $this->stringTranslation = $string_translation;
-    return $this;
   }
 
   /**
@@ -121,6 +120,13 @@ class TestMigrateExecutable extends MigrateExecutable {
    */
   public function setMemoryThreshold($threshold) {
     $this->memoryThreshold = $threshold;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function formatSize($size) {
+    return $size;
   }
 
 }

@@ -10,8 +10,6 @@ use Drupal\node\Entity\NodeType;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\Tests\migrate_drupal\Traits\CreateTestContentEntitiesTrait;
 
-// cspell:ignore sourceid
-
 /**
  * Tests the migration auditor for ID conflicts.
  *
@@ -37,20 +35,16 @@ class MigrateDrupal6AuditIdsTest extends MigrateDrupal6TestBase {
     // Install required schemas.
     $this->installSchema('book', ['book']);
     $this->installSchema('dblog', ['watchdog']);
-    // @todo Remove forum in https://www.drupal.org/project/drupal/issues/3261653
     $this->installSchema('forum', ['forum_index']);
     $this->installSchema('node', ['node_access']);
     $this->installSchema('search', ['search_dataset']);
-    // @todo Remove tracker in https://www.drupal.org/project/drupal/issues/3261452
+    $this->installSchema('system', ['sequences']);
     $this->installSchema('tracker', ['tracker_node', 'tracker_user']);
 
     // Enable content moderation for nodes of type page.
     $this->installEntitySchema('content_moderation_state');
     $this->installConfig('content_moderation');
-    NodeType::create([
-      'type' => 'page',
-      'name' => 'Page',
-    ])->save();
+    NodeType::create(['type' => 'page'])->save();
     $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'page');
     $workflow->save();
@@ -134,6 +128,8 @@ class MigrateDrupal6AuditIdsTest extends MigrateDrupal6TestBase {
     );
 
     $expected = [
+      'd6_aggregator_feed',
+      'd6_aggregator_item',
       'd6_comment',
       'd6_custom_block',
       'd6_file',

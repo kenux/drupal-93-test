@@ -28,15 +28,12 @@ class FieldHelpTest extends BrowserTestBase {
    */
   protected $adminUser;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
     // Create the admin user.
     $this->adminUser = $this->drupalCreateUser([
-      'access help pages',
+      'access administration pages',
       'view the administration theme',
     ]);
   }

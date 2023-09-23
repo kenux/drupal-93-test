@@ -189,7 +189,7 @@ class ConfigEntityTest extends BrowserTestBase {
     $this->assertTrue($same_id->isNew());
     try {
       $same_id->save();
-      $this->fail('Not possible to overwrite an entity.');
+      $this->fail('Not possible to overwrite an entity entity.');
     }
     catch (EntityStorageException $e) {
       // Expected exception; just continue testing.
@@ -225,12 +225,12 @@ class ConfigEntityTest extends BrowserTestBase {
   /**
    * Tests CRUD operations through the UI.
    */
-  public function testCrudUi() {
+  public function testCRUDUI() {
     $this->drupalLogin($this->drupalCreateUser([
       'administer site configuration',
     ]));
 
-    $id = $this->randomMachineName();
+    $id = strtolower($this->randomMachineName());
     $label1 = $this->randomMachineName();
     $label2 = $this->randomMachineName();
     $label3 = $this->randomMachineName();
@@ -290,7 +290,7 @@ class ConfigEntityTest extends BrowserTestBase {
 
     // Rename the configuration entity's ID/machine name.
     $edit = [
-      'id' => $this->randomMachineName(),
+      'id' => strtolower($this->randomMachineName()),
       'label' => $label3,
     ];
     $this->drupalGet("admin/structure/config_test/manage/{$id}");
@@ -326,7 +326,7 @@ class ConfigEntityTest extends BrowserTestBase {
     // @see \Drupal\Tests\config\FunctionalJavascript\ConfigEntityTest::testAjaxOnAddPage()
     $this->drupalGet('admin/structure/config_test/add');
 
-    $id = $this->randomMachineName();
+    $id = strtolower($this->randomMachineName());
     $edit = [
       'id' => $id,
       'label' => $this->randomString(),

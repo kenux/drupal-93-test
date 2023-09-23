@@ -25,7 +25,7 @@ class FieldLayoutTest extends WebDriverTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
   /**
    * {@inheritdoc}
@@ -57,9 +57,9 @@ class FieldLayoutTest extends WebDriverTestBase {
   public function testEntityViewModes() {
     // By default, the field is not visible.
     $this->drupalGet('entity_test/1/test');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content ');
+    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
     $this->drupalGet('entity_test/1');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content');
+    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
 
     // Change the layout for the "test" view mode. See
     // core.entity_view_mode.entity_test.test.yml.
@@ -75,9 +75,9 @@ class FieldLayoutTest extends WebDriverTestBase {
 
     // Each view mode has a different layout.
     $this->drupalGet('entity_test/1/test');
-    $this->assertSession()->elementTextContains('css', '.layout__region--content', 'The field test text value');
+    $this->assertSession()->elementExists('css', '.layout__region--content .field--name-field-test-text');
     $this->drupalGet('entity_test/1');
-    $this->assertSession()->elementNotExists('css', '.layout__region--content');
+    $this->assertSession()->elementNotExists('css', '.layout__region--content .field--name-field-test-text');
   }
 
   /**
@@ -127,11 +127,6 @@ class FieldLayoutTest extends WebDriverTestBase {
     $this->assertSession()->elementExists('css', '.layout__region--second .field--name-field-test-text');
     $this->assertFieldInRegion('field_test_text[0][value]', 'second');
 
-    // Tests if this layout works in an embedded context.
-    $this->drupalGet('/field-layout-embedded-form');
-    $this->assertSession()->elementExists('css', '.layout__region--second .field--name-field-test-text');
-    $this->assertFieldInRegion('foo[field_test_text][0][value]', 'second');
-
     // Move the field to the second region without tabledrag.
     $this->drupalGet('entity_test/structure/entity_test/form-display');
     $this->getSession()->getPage()->pressButton('Show row weights');
@@ -171,7 +166,7 @@ class FieldLayoutTest extends WebDriverTestBase {
     // No fields are visible, and the regions don't display when empty.
     $this->assertSession()->elementNotExists('css', '.layout--twocol');
     $this->assertSession()->elementNotExists('css', '.layout__region');
-    $this->assertSession()->pageTextNotContains('The field test text value');
+    $this->assertSession()->elementNotExists('css', '.field--name-field-test-text');
 
     // After a refresh the new regions are still there.
     $this->drupalGet('entity_test/structure/entity_test/display');
@@ -193,7 +188,7 @@ class FieldLayoutTest extends WebDriverTestBase {
     // The new layout is used.
     $this->drupalGet('entity_test/1');
     $this->assertSession()->elementExists('css', '.layout--twocol');
-    $this->assertSession()->elementTextContains('css', '.layout__region--first', 'The field test text value');
+    $this->assertSession()->elementExists('css', '.layout__region--first .field--name-field-test-text');
 
     // Move the field to the second region without tabledrag.
     $this->drupalGet('entity_test/structure/entity_test/display');
@@ -205,13 +200,13 @@ class FieldLayoutTest extends WebDriverTestBase {
 
     // The updated region is used.
     $this->drupalGet('entity_test/1');
-    $this->assertSession()->elementTextContains('css', '.layout__region--second', 'The field test text value');
+    $this->assertSession()->elementExists('css', '.layout__region--second .field--name-field-test-text');
 
     // The layout is still in use without Field UI.
     $this->container->get('module_installer')->uninstall(['field_ui']);
     $this->drupalGet('entity_test/1');
     $this->assertSession()->elementExists('css', '.layout--twocol');
-    $this->assertSession()->elementTextContains('css', '.layout__region--second', 'The field test text value');
+    $this->assertSession()->elementExists('css', '.layout__region--second .field--name-field-test-text');
   }
 
   /**

@@ -5,16 +5,14 @@ namespace Drupal\Tests\system\Functional\System;
 use Drupal\Core\Datetime\Entity\DateFormat;
 use Drupal\Core\Url;
 use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\field_ui\Traits\FieldUiTestTrait;
 
 /**
- * Test date formatting and time zone handling, including daylight saving time.
+ * Configure date and time settings. Test date formatting and time zone
+ * handling, including daylight saving time.
  *
  * @group system
  */
 class DateTimeTest extends BrowserTestBase {
-
-  use FieldUiTestTrait;
 
   /**
    * Modules to enable.
@@ -36,9 +34,6 @@ class DateTimeTest extends BrowserTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -104,7 +99,7 @@ class DateTimeTest extends BrowserTestBase {
 
     // Add custom date format.
     $this->clickLink('Add format');
-    $date_format_id = $this->randomMachineName(8);
+    $date_format_id = strtolower($this->randomMachineName(8));
     $name = ucwords($date_format_id);
     $date_format = 'd.m.Y - H:i';
     $edit = [
@@ -156,7 +151,7 @@ class DateTimeTest extends BrowserTestBase {
     $this->assertNull($date_format);
 
     // Add a new date format with an existing format.
-    $date_format_id = $this->randomMachineName(8);
+    $date_format_id = strtolower($this->randomMachineName(8));
     $name = ucwords($date_format_id);
     $date_format = 'Y';
     $edit = [
@@ -178,7 +173,7 @@ class DateTimeTest extends BrowserTestBase {
       'id' => 'xss_short',
       'label' => 'XSS format',
       'pattern' => '\<\s\c\r\i\p\t\>\a\l\e\r\t\(\'\X\S\S\'\)\;\<\/\s\c\r\i\p\t\>',
-    ]);
+      ]);
     $date_format->save();
 
     $this->drupalGet(Url::fromRoute('entity.date_format.collection'));
@@ -186,7 +181,7 @@ class DateTimeTest extends BrowserTestBase {
     $this->assertSession()->assertEscaped("<script>alert('XSS');</script>");
 
     // Add a new date format with HTML in it.
-    $date_format_id = $this->randomMachineName(8);
+    $date_format_id = strtolower($this->randomMachineName(8));
     $name = ucwords($date_format_id);
     $date_format = '& \<\e\m\>Y\<\/\e\m\>';
     $edit = [
@@ -214,12 +209,26 @@ class DateTimeTest extends BrowserTestBase {
     $this->drupalGet('admin/structure/types/manage/page_with_date');
     $this->assertSession()->statusCodeEquals(200);
 
-    $storage_edit = [
+    $this->drupalGet('admin/structure/types/manage/page_with_date/fields/add-field');
+    $edit = [
+      'new_storage_type' => 'datetime',
+      'label' => 'dt',
+      'field_name' => 'dt',
+    ];
+    $this->drupalGet('admin/structure/types/manage/page_with_date/fields/add-field');
+    $this->submitForm($edit, 'Save and continue');
+    // Check that the new datetime field was created, and process is now set
+    // to continue for configuration.
+    $this->assertSession()->pageTextContains('These settings apply to the');
+
+    $this->drupalGet('admin/structure/types/manage/page_with_date/fields/node.page_with_date.field_dt/storage');
+    $edit = [
       'settings[datetime_type]' => 'datetime',
       'cardinality' => 'number',
       'cardinality_number' => '1',
     ];
-    $this->fieldUIAddNewField('admin/structure/types/manage/page_with_date', 'dt', 'dt', 'datetime', $storage_edit);
+    $this->drupalGet('admin/structure/types/manage/page_with_date/fields/node.page_with_date.field_dt/storage');
+    $this->submitForm($edit, 'Save field settings');
 
     $this->drupalGet('admin/structure/types/manage/page_with_date/fields');
     $this->assertSession()->pageTextContains('field_dt');

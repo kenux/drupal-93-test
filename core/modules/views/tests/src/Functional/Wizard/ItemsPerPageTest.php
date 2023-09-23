@@ -3,7 +3,8 @@
 namespace Drupal\Tests\views\Functional\Wizard;
 
 /**
- * Tests that the views wizard can specify the number of items per page.
+ * Tests the ability of the views wizard to specify the number of items per
+ * page.
  *
  * @group views
  */
@@ -14,11 +15,8 @@ class ItemsPerPageTest extends WizardTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE, $modules = []): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
 
     $this->drupalPlaceBlock('page_title_block');
   }
@@ -44,7 +42,7 @@ class ItemsPerPageTest extends WizardTestBase {
     // 3 in the block.
     $view = [];
     $view['label'] = $this->randomMachineName(16);
-    $view['id'] = $this->randomMachineName(16);
+    $view['id'] = strtolower($this->randomMachineName(16));
     $view['description'] = $this->randomMachineName(16);
     $view['show[wizard_key]'] = 'node';
     $view['show[type]'] = 'article';

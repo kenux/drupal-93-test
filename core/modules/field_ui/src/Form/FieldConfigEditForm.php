@@ -2,18 +2,10 @@
 
 namespace Drupal\field_ui\Form;
 
-use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
 use Drupal\Core\Field\FieldFilteredMarkup;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
-use Drupal\Core\TempStore\PrivateTempStore;
-use Drupal\Core\TypedData\TypedDataInterface;
-use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\Core\Url;
 use Drupal\field\FieldConfigInterface;
 use Drupal\field_ui\FieldUI;
@@ -25,8 +17,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @internal
  */
 class FieldConfigEditForm extends EntityForm {
-
-  use FieldStorageCreationTrait;
 
   /**
    * The entity being used by this form.
@@ -43,45 +33,13 @@ class FieldConfigEditForm extends EntityForm {
   protected $entityTypeBundleInfo;
 
   /**
-   * The name of the entity type.
-   *
-   * @var string
-   */
-  protected string $entityTypeId;
-
-  /**
-   * The entity bundle.
-   *
-   * @var string
-   */
-  protected string $bundle;
-
-  /**
    * Constructs a new FieldConfigDeleteForm object.
    *
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
    *   The entity type bundle info service.
-   * @param \Drupal\Core\TypedData\TypedDataManagerInterface $typedDataManager
-   *   The type data manger.
-   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface|null $entityDisplayRepository
-   *   The entity display repository.
-   * @param \Drupal\Core\TempStore\PrivateTempStore|null $tempStore
-   *   The private tempstore.
    */
-  public function __construct(
-    EntityTypeBundleInfoInterface $entity_type_bundle_info,
-    protected TypedDataManagerInterface $typedDataManager,
-    protected ?EntityDisplayRepositoryInterface $entityDisplayRepository = NULL,
-    protected ?PrivateTempStore $tempStore = NULL) {
+  public function __construct(EntityTypeBundleInfoInterface $entity_type_bundle_info) {
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
-    if ($this->entityDisplayRepository === NULL) {
-      @trigger_error('Calling FieldConfigEditForm::__construct() without the $entityDisplayRepository argument is deprecated in drupal:10.2.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3383771', E_USER_DEPRECATED);
-      $this->entityDisplayRepository = \Drupal::service('entity_display.repository');
-    }
-    if ($this->tempStore === NULL) {
-      @trigger_error('Calling FieldConfigEditForm::__construct() without the $tempStore argument is deprecated in drupal:10.2.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3383771', E_USER_DEPRECATED);
-      $this->tempStore = \Drupal::service('tempstore.private')->get('field_ui');
-    }
   }
 
   /**
@@ -89,10 +47,7 @@ class FieldConfigEditForm extends EntityForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.bundle.info'),
-      $container->get('typed_data_manager'),
-      $container->get('entity_display.repository'),
-      $container->get('tempstore.private')->get('field_ui')
+      $container->get('entity_type.bundle.info')
     );
   }
 
@@ -151,7 +106,7 @@ class FieldConfigEditForm extends EntityForm {
       'entity_id' => NULL,
     ];
     $form['#entity'] = _field_create_entity_from_ids($ids);
-    $items = $this->getTypedData($form['#entity']);
+    $items = $form['#entity']->get($this->entity->getName());
     $item = $items->first() ?: $items->appendItem();
 
     // Add field settings for the field type and a container for third party
@@ -166,14 +121,8 @@ class FieldConfigEditForm extends EntityForm {
       '#weight' => 11,
     ];
 
-    // Create a new instance of typed data for the field to ensure that default
-    // value widget is always rendered from a clean state.
-    $items = $this->getTypedData($form['#entity']);
-
     // Add handling for default value.
     if ($element = $items->defaultValuesForm($form, $form_state)) {
-      $has_required = $this->hasAnyRequired($element);
-
       $element = array_merge($element, [
         '#type' => 'details',
         '#title' => $this->t('Default value'),
@@ -183,49 +132,10 @@ class FieldConfigEditForm extends EntityForm {
         '#weight' => 12,
       ]);
 
-      if (!$has_required) {
-        $has_default_value = count($this->entity->getDefaultValue($form['#entity'])) > 0;
-        $element['#states'] = [
-          'invisible' => [
-            ':input[name="set_default_value"]' => ['checked' => FALSE],
-          ],
-        ];
-        $form['set_default_value'] = [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Set default value'),
-          '#default_value' => $has_default_value,
-          '#description' => $this->t('Provide a pre-filled value for the editing form.'),
-          '#weight' => $element['#weight'],
-        ];
-      }
-
       $form['default_value'] = $element;
     }
 
     return $form;
-  }
-
-  /**
-   * A function to check if element contains any required elements.
-   *
-   * @param array $element
-   *   An element to check.
-   *
-   * @return bool
-   */
-  private function hasAnyRequired(array $element) {
-    $has_required = FALSE;
-    foreach (Element::children($element) as $child) {
-      if (isset($element[$child]['#required']) && $element[$child]['#required']) {
-        $has_required = TRUE;
-        break;
-      }
-      if (Element::children($element[$child])) {
-        return $this->hasAnyRequired($element[$child]);
-      }
-    }
-
-    return $has_required;
   }
 
   /**
@@ -267,15 +177,9 @@ class FieldConfigEditForm extends EntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
 
-    // Before proceeding validation, rebuild the entity to make sure it's
-    // up-to-date. This is needed because element validators may update form
-    // state, and other validators use the entity for validating the field.
-    // @todo remove in https://www.drupal.org/project/drupal/issues/3372934.
-    $this->entity = $this->buildEntity($form, $form_state);
-
-    if (isset($form['default_value']) && (!isset($form['set_default_value']) || $form_state->getValue('set_default_value'))) {
-      $items = $this->getTypedData($form['#entity']);
-      $items->defaultValuesFormValidate($form['default_value'], $form, $form_state);
+    if (isset($form['default_value'])) {
+      $item = $form['#entity']->get($this->entity->getName());
+      $item->defaultValuesFormValidate($form['default_value'], $form, $form_state);
     }
   }
 
@@ -287,8 +191,8 @@ class FieldConfigEditForm extends EntityForm {
 
     // Handle the default value.
     $default_value = [];
-    if (isset($form['default_value']) && (!isset($form['set_default_value']) || $form_state->getValue('set_default_value'))) {
-      $items = $this->getTypedData($form['#entity']);
+    if (isset($form['default_value'])) {
+      $items = $form['#entity']->get($this->entity->getName());
       $default_value = $items->defaultValuesFormSubmit($form['default_value'], $form, $form_state);
     }
     $this->entity->setDefaultValue($default_value);
@@ -298,39 +202,12 @@ class FieldConfigEditForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $temp_storage = $this->tempStore->get($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName());
-    if ($this->entity->isNew()) {
-      // @todo remove in https://www.drupal.org/project/drupal/issues/3347291.
-      if ($temp_storage && $temp_storage['field_storage']->isNew()) {
-        // Save field storage.
-        try {
-          $temp_storage['field_storage']->save();
-        }
-        catch (EntityStorageException $e) {
-          $this->tempStore->delete($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName());
-          $form_state->setRedirectUrl(FieldUI::getOverviewRouteInfo($this->entity->getTargetEntityTypeId(), $this->entity->getTargetBundle()));
-          $this->messenger()->addError($this->t('An error occurred while saving the field: @error', ['@error' => $e->getMessage()]));
-          return;
-        }
-      }
-    }
-    // Save field config.
     $this->entity->save();
-    if (isset($form_state->getStorage()['default_options'])) {
-      $default_options = $form_state->getStorage()['default_options'];
-      // Configure the default display modes.
-      $this->entityTypeId = $temp_storage['field_config_values']['entity_type'];
-      $this->bundle = $temp_storage['field_config_values']['bundle'];
-      $this->configureEntityFormDisplay($temp_storage['field_config_values']['field_name'], $default_options['entity_form_display'] ?? []);
-      $this->configureEntityViewDisplay($temp_storage['field_config_values']['field_name'], $default_options['entity_view_display'] ?? []);
-      // Delete the temp store entry.
-      $this->tempStore->delete($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName());
-    }
 
     $this->messenger()->addStatus($this->t('Saved %label configuration.', ['%label' => $this->entity->getLabel()]));
 
     $request = $this->getRequest();
-    if (($destinations = $request->query->all('destinations')) && $next_destination = FieldUI::getNextDestination($destinations)) {
+    if (($destinations = $request->query->get('destinations')) && $next_destination = FieldUI::getNextDestination($destinations)) {
       $request->query->remove('destinations');
       $form_state->setRedirectUrl($next_destination);
     }
@@ -350,19 +227,6 @@ class FieldConfigEditForm extends EntityForm {
    */
   public function getTitle(FieldConfigInterface $field_config) {
     return $field_config->label();
-  }
-
-  /**
-   * Gets typed data object for the field.
-   *
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $parent
-   *   The parent entity that the field is attached to.
-   *
-   * @return \Drupal\Core\TypedData\TypedDataInterface
-   */
-  private function getTypedData(FieldableEntityInterface $parent): TypedDataInterface {
-    $entity_adapter = EntityAdapter::createFromEntity($parent);
-    return $this->typedDataManager->create($this->entity, $this->entity->getDefaultValue($parent), $this->entity->getName(), $entity_adapter);
   }
 
 }

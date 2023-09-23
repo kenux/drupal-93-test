@@ -93,9 +93,8 @@ class Select extends Query implements SelectInterface {
   protected $range;
 
   /**
-   * An array whose elements specify a query to UNION, and the UNION type.
-   *
-   * The 'type' key may be '', 'ALL', or 'DISTINCT' to represent a 'UNION',
+   * An array whose elements specify a query to UNION, and the UNION type. The
+   * 'type' key may be '', 'ALL', or 'DISTINCT' to represent a 'UNION',
    * 'UNION ALL', or 'UNION DISTINCT' statement, respectively.
    *
    * All entries in this array will be applied from front to back, with the
@@ -120,16 +119,6 @@ class Select extends Query implements SelectInterface {
   protected $forUpdate = FALSE;
 
   /**
-   * The query metadata for alter purposes.
-   */
-  public array $alterMetaData;
-
-  /**
-   * The query tags.
-   */
-  public array $alterTags;
-
-  /**
    * Constructs a Select object.
    *
    * @param \Drupal\Core\Database\Connection $connection
@@ -142,8 +131,6 @@ class Select extends Query implements SelectInterface {
    *   Array of query options.
    */
   public function __construct(Connection $connection, $table, $alias = NULL, $options = []) {
-    // @todo Remove $options['return'] in Drupal 11.
-    // @see https://www.drupal.org/project/drupal/issues/3256524
     $options['return'] = Database::RETURN_STATEMENT;
     parent::__construct($connection, $options);
     $conjunction = $options['conjunction'] ?? 'AND';
@@ -856,7 +843,7 @@ class Select extends Query implements SelectInterface {
       else {
         $table_string = $this->connection->escapeTable($table['table']);
         // Do not attempt prefixing cross database / schema queries.
-        if (!str_contains($table_string, '.')) {
+        if (strpos($table_string, '.') === FALSE) {
           $table_string = '{' . $table_string . '}';
         }
       }
@@ -878,10 +865,7 @@ class Select extends Query implements SelectInterface {
 
     // GROUP BY
     if ($this->group) {
-      $group_by_fields = array_map(function (string $field): string {
-        return $this->connection->escapeField($field);
-      }, $this->group);
-      $query .= "\nGROUP BY " . implode(', ', $group_by_fields);
+      $query .= "\nGROUP BY " . implode(', ', $this->group);
     }
 
     // HAVING

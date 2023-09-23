@@ -7,7 +7,6 @@ use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Url;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\Tests\field_ui\Traits\FieldUiTestTrait;
 
 /**
  * Ensures that media UI works correctly.
@@ -15,8 +14,6 @@ use Drupal\Tests\field_ui\Traits\FieldUiTestTrait;
  * @group media
  */
 class MediaUiFunctionalTest extends MediaFunctionalTestBase {
-
-  use FieldUiTestTrait;
 
   /**
    * Modules to enable.
@@ -26,7 +23,6 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
   protected static $modules = [
     'block',
     'media_test_source',
-    'media',
   ];
 
   /**
@@ -95,21 +91,6 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
       ->getStorage('media')
       ->loadUnchanged($media_id);
     $this->assertSame($media->getName(), $media_name2);
-
-    // Change the authored by field to an empty string, which should assign
-    // authorship to the anonymous user (uid 0).
-    $this->drupalGet('media/' . $media_id . '/edit');
-    $edit['uid[0][target_id]'] = '';
-    $this->submitForm($edit, 'Save');
-    /** @var \Drupal\media\MediaInterface $media */
-    $media = $this->container->get('entity_type.manager')
-      ->getStorage('media')
-      ->loadUnchanged($media_id);
-    $uid = $media->getOwnerId();
-    // Most SQL database drivers stringify fetches but entities are not
-    // necessarily stored in a SQL database. At the same time, NULL/FALSE/""
-    // won't do.
-    $this->assertTrue($uid === 0 || $uid === '0', 'Media authored by anonymous user.');
 
     // Test that there is no empty vertical tabs element, if the container is
     // empty (see #2750697).
@@ -193,11 +174,15 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
    * Tests that media in ER fields use the Rendered Entity formatter by default.
    */
   public function testRenderedEntityReferencedMedia() {
+    $page = $this->getSession()->getPage();
     $assert_session = $this->assertSession();
 
     $this->drupalCreateContentType(['type' => 'page', 'name' => 'Page']);
-    $this->createMediaType('image', ['id' => 'image', 'new_revision' => TRUE]);
-    $this->fieldUIAddNewField('/admin/structure/types/manage/page', 'foo_field', 'Foo field', 'field_ui:entity_reference:media', [], ['settings[handler_settings][target_bundles][image]' => TRUE]);
+    $this->drupalGet('/admin/structure/types/manage/page/fields/add-field');
+    $page->selectFieldOption('new_storage_type', 'field_ui:entity_reference:media');
+    $page->fillField('label', 'Foo field');
+    $page->fillField('field_name', 'foo_field');
+    $page->pressButton('Save and continue');
     $this->drupalGet('/admin/structure/types/manage/page/display');
     $assert_session->fieldValueEquals('fields[field_foo_field][type]', 'entity_reference_entity_view');
   }
@@ -341,11 +326,19 @@ class MediaUiFunctionalTest extends MediaFunctionalTestBase {
     // settings form.
     // Using submitForm() to avoid dealing with JavaScript on the previous
     // page in the field creation.
-    $field_edit = [];
+    $edit = [
+      'new_storage_type' => 'field_ui:entity_reference:media',
+      'label' => "Media (cardinality $cardinality)",
+      'field_name' => 'media_reference',
+    ];
+    $this->drupalGet("admin/structure/types/manage/{$content_type->id()}/fields/add-field");
+    $this->submitForm($edit, 'Save and continue');
+    $edit = [];
     foreach ($media_types as $type) {
-      $field_edit["settings[handler_settings][target_bundles][$type]"] = TRUE;
+      $edit["settings[handler_settings][target_bundles][$type]"] = TRUE;
     }
-    $this->fieldUIAddNewField("admin/structure/types/manage/{$content_type->id()}", 'media_reference', "Media (cardinality $cardinality)", 'field_ui:entity_reference:media', [], $field_edit);
+    $this->drupalGet("admin/structure/types/manage/{$content_type->id()}/fields/node.{$content_type->id()}.field_media_reference");
+    $this->submitForm($edit, "Save settings");
     \Drupal::entityTypeManager()
       ->getStorage('entity_form_display')
       ->load('node.' . $content_type->id() . '.default')

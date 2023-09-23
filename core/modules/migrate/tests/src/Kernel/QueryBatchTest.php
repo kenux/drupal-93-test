@@ -6,8 +6,7 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\sqlite\Driver\Database\sqlite\Connection;
-use Drupal\TestTools\Random;
+use Drupal\Core\Database\Driver\sqlite\Connection;
 
 /**
  * Tests query batching.
@@ -77,7 +76,7 @@ class QueryBatchTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static function queryDataProvider() {
+  public function queryDataProvider() {
     // Define the parameters for building the data array. The first element is
     // the number of source data rows, the second is the batch size to set on
     // the plugin configuration.
@@ -105,7 +104,7 @@ class QueryBatchTest extends KernelTestBase {
       for ($i = 0; $i < $num_rows; $i++) {
         $tests[$data_set]['source_data'][$table][] = [
           'id' => $i,
-          'data' => Random::string(),
+          'data' => $this->randomString(),
         ];
       }
       $tests[$data_set]['expected_data'] = $tests[$data_set]['source_data'][$table];
@@ -156,6 +155,7 @@ class QueryBatchTest extends KernelTestBase {
     // reflection hack to set it in the plugin instance.
     $reflector = new \ReflectionObject($plugin);
     $property = $reflector->getProperty('database');
+    $property->setAccessible(TRUE);
 
     $connection = $this->getDatabase($source_data);
     $property->setValue($plugin, $connection);
@@ -182,6 +182,7 @@ class QueryBatchTest extends KernelTestBase {
       $expected_batch_size = $configuration['batch_size'];
     }
     $property = $reflector->getProperty('batchSize');
+    $property->setAccessible(TRUE);
     self::assertSame($expected_batch_size, $property->getValue($plugin));
 
     // Test the batch count.
@@ -192,6 +193,7 @@ class QueryBatchTest extends KernelTestBase {
       }
     }
     $property = $reflector->getProperty('batch');
+    $property->setAccessible(TRUE);
     self::assertSame($expected_batch_count, $property->getValue($plugin));
   }
 
@@ -222,7 +224,7 @@ class QueryBatchTest extends KernelTestBase {
    *   The source data, keyed by table name. Each table is an array containing
    *   the rows in that table.
    *
-   * @return \Drupal\sqlite\Driver\Database\sqlite\Connection
+   * @return \Drupal\Core\Database\Driver\sqlite\Connection
    *   The SQLite database connection.
    */
   protected function getDatabase(array $source_data) {

@@ -6,6 +6,7 @@ use Drupal\block_content\Entity\BlockContent;
 use Drupal\block_content\Entity\BlockContentType;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Tests\views\Functional\ViewTestBase;
+use Drupal\views\Tests\ViewTestData;
 
 /**
  * Base class for all block_content tests.
@@ -26,8 +27,6 @@ abstract class BlockContentTestBase extends ViewTestBase {
    */
   protected $permissions = [
     'administer blocks',
-    'administer block content',
-    'access block library',
   ];
 
   /**
@@ -41,25 +40,26 @@ abstract class BlockContentTestBase extends ViewTestBase {
     'block_content_test_views',
   ];
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE, $modules = ['block_content_test_views']): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE) {
+    parent::setUp($import_test_views);
     // Ensure the basic bundle exists. This is provided by the standard profile.
     $this->createBlockContentType(['id' => 'basic']);
 
     $this->adminUser = $this->drupalCreateUser($this->permissions);
+
+    if ($import_test_views) {
+      ViewTestData::createTestViews(static::class, ['block_content_test_views']);
+    }
   }
 
   /**
-   * Creates a content block.
+   * Creates a custom block.
    *
    * @param array $values
    *   (optional) The values for the block_content entity.
    *
    * @return \Drupal\block_content\Entity\BlockContent
-   *   Created content block.
+   *   Created custom block.
    */
   protected function createBlockContent(array $values = []) {
     $status = 0;
@@ -76,19 +76,19 @@ abstract class BlockContentTestBase extends ViewTestBase {
   }
 
   /**
-   * Creates a block type (bundle).
+   * Creates a custom block type (bundle).
    *
    * @param array $values
    *   An array of settings to change from the defaults.
    *
    * @return \Drupal\block_content\Entity\BlockContentType
-   *   Created block type.
+   *   Created custom block type.
    */
   protected function createBlockContentType(array $values = []) {
     // Find a non-existent random type name.
     if (!isset($values['id'])) {
       do {
-        $id = $this->randomMachineName(8);
+        $id = strtolower($this->randomMachineName(8));
       } while (BlockContentType::load($id));
     }
     else {

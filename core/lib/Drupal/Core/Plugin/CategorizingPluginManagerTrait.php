@@ -74,6 +74,7 @@ trait CategorizingPluginManagerTrait {
    * {@inheritdoc}
    */
   public function getCategories() {
+    /** @var \Drupal\Core\Plugin\CategorizingPluginManagerTrait|\Drupal\Component\Plugin\PluginManagerInterface $this */
     // Fetch all categories from definitions and remove duplicates.
     $categories = array_unique(array_values(array_map(function ($definition) {
       return $definition['category'];
@@ -87,9 +88,10 @@ trait CategorizingPluginManagerTrait {
    */
   public function getSortedDefinitions(array $definitions = NULL, $label_key = 'label') {
     // Sort the plugins first by category, then by label.
+    /** @var \Drupal\Core\Plugin\CategorizingPluginManagerTrait|\Drupal\Component\Plugin\PluginManagerInterface $this */
     $definitions = $definitions ?? $this->getDefinitions();
     uasort($definitions, function ($a, $b) use ($label_key) {
-      if ((string) $a['category'] != (string) $b['category']) {
+      if ($a['category'] != $b['category']) {
         return strnatcasecmp($a['category'], $b['category']);
       }
       return strnatcasecmp($a[$label_key], $b[$label_key]);

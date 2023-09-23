@@ -20,10 +20,7 @@ class YamlTest extends TestCase {
    */
   protected $mockParser;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
+  public function setUp(): void {
     parent::setUp();
     $this->mockParser = $this->getMockBuilder('\stdClass')
       ->addMethods(['encode', 'decode', 'getFileExtension'])
@@ -31,10 +28,7 @@ class YamlTest extends TestCase {
     YamlParserProxy::setMock($this->mockParser);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function tearDown(): void {
+  public function tearDown(): void {
     YamlParserProxy::setMock(NULL);
     parent::tearDown();
   }
@@ -129,8 +123,8 @@ class YamlTest extends TestCase {
     foreach ($dirs as $dir) {
       $pathname = $dir->getPathname();
       // Exclude core/node_modules.
-      if ($dir->getExtension() == 'yml' && !str_contains($pathname, '/../../../../../node_modules')) {
-        if (str_contains($dir->getRealPath(), 'invalid_file')) {
+      if ($dir->getExtension() == 'yml' && strpos($pathname, '/../../../../../node_modules') === FALSE) {
+        if (strpos($dir->getRealPath(), 'invalid_file') !== FALSE) {
           // There are some intentionally invalid files provided for testing
           // library API behaviors, ignore them.
           continue;

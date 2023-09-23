@@ -61,9 +61,6 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
    */
   protected $profile = 'standard';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     $this->entityTypeId = 'node';
     $this->bundle = 'article';
@@ -76,7 +73,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     $this->drupalLogin($this->administrator);
     $edit = ['language_configuration[language_alterable]' => TRUE];
     $this->drupalGet('admin/structure/types/manage/article');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save content type');
     $this->drupalLogin($this->translator);
   }
 
@@ -255,16 +252,16 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     $this->drupalLogin($this->administrator);
     $article = $this->drupalCreateNode(['type' => 'article', 'langcode' => $this->langcodes[0]]);
 
-    // Set up the default admin theme and use it for node editing.
-    $this->container->get('theme_installer')->install(['claro']);
+    // Set up Seven as the admin theme and use it for node editing.
+    $this->container->get('theme_installer')->install(['seven']);
     $edit = [];
-    $edit['admin_theme'] = 'claro';
+    $edit['admin_theme'] = 'seven';
     $edit['use_admin_theme'] = TRUE;
     $this->drupalGet('admin/appearance');
     $this->submitForm($edit, 'Save configuration');
     $this->drupalGet('node/' . $article->id() . '/translations');
     // Verify that translation uses the admin theme if edit is admin.
-    $this->assertSession()->responseContains('core/themes/claro/css/base/elements.css');
+    $this->assertSession()->responseContains('core/themes/seven/css/base/elements.css');
 
     // Turn off admin theme for editing, assert inheritance to translations.
     $edit['use_admin_theme'] = FALSE;
@@ -272,7 +269,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     $this->submitForm($edit, 'Save configuration');
     $this->drupalGet('node/' . $article->id() . '/translations');
     // Verify that translation uses the frontend theme if edit is frontend.
-    $this->assertSession()->responseNotContains('core/themes/claro/css/base/elements.css');
+    $this->assertSession()->responseNotContains('core/themes/seven/css/base/elements.css');
 
     // Assert presence of translation page itself (vs. DisabledBundle below).
     $this->assertSession()->statusCodeEquals(200);
@@ -338,7 +335,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     $display['display_options']['rendering_language'] = '***LANGUAGE_entity_translation***';
     $view->save();
 
-    // Need to check from the beginning, including the base_path, in the URL
+    // Need to check from the beginning, including the base_path, in the url
     // since the pattern for the default language might be a substring of
     // the strings for other languages.
     $base_path = base_path();
@@ -560,7 +557,7 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     // details form element.
     $edit = ['cardinality_number' => 2];
     $this->drupalGet('admin/structure/types/manage/article/fields/node.article.field_image/storage');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save field settings');
 
     // Make the image field non-translatable.
     $edit = ['settings[node][article][fields][field_image]' => FALSE];
@@ -575,28 +572,6 @@ class NodeTranslationUITest extends ContentTranslationUITestBase {
     $markup = 'Image <span class="translation-entity-all-languages">(all languages)</span>';
     $this->assertSession()->assertNoEscaped($markup);
     $this->assertSession()->responseContains($markup);
-  }
-
-  /**
-   * Test that when content is language neutral, it uses interface language.
-   *
-   * When language neutral content is displayed on interface language, it should
-   * consider the interface language for creating the content link.
-   */
-  public function testUrlPrefixOnLanguageNeutralContent() {
-    $this->drupalLogin($this->administrator);
-    $neutral_langcodes = [
-      LanguageInterface::LANGCODE_NOT_APPLICABLE,
-      LanguageInterface::LANGCODE_NOT_SPECIFIED,
-    ];
-    foreach ($neutral_langcodes as $langcode) {
-      $article = $this->drupalCreateNode(['type' => 'article', 'langcode' => $langcode]);
-      $this->drupalGet("{$this->langcodes[1]}/admin/content");
-      $this->assertSession()->linkByHrefExists("{$this->langcodes[1]}/node/{$article->id()}");
-
-      $this->drupalGet("{$this->langcodes[2]}/admin/content");
-      $this->assertSession()->linkByHrefExists("{$this->langcodes[2]}/node/{$article->id()}");
-    }
   }
 
 }

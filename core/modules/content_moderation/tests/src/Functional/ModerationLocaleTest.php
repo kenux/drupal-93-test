@@ -86,7 +86,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
     ];
     $this->submitForm($edit, 'Save (this translation)');
     // Here the error has occurred "The website encountered an unexpected error.
-    // Try again later."
+    // Please try again later."
     // If the translation has got lost.
     $this->assertSession()->pageTextContains('Article French node Draft has been updated.');
 
@@ -255,7 +255,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Publish the Italian draft (revision 6).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 3);
+    $this->clickLink('Edit', 2);
     $this->submitNodeForm('Test 1.6 IT', 'published');
     $this->assertNotLatestVersionPage($it_node);
     $this->assertNoModerationForm($node);
@@ -263,7 +263,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Publish the French draft (revision 7).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 2);
+    $this->clickLink('Edit', 1);
     $this->submitNodeForm('Test 1.7 FR', 'published');
     $this->assertNotLatestVersionPage($fr_node);
     $this->assertNoModerationForm($node);
@@ -271,7 +271,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Create an Italian draft (revision 8).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 3);
+    $this->clickLink('Edit', 2);
     $this->submitNodeForm('Test 1.8 IT', 'draft');
     $this->assertLatestVersionPage($it_node);
     $this->assertNoModerationForm($node);
@@ -279,7 +279,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Create a French draft (revision 9).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 2);
+    $this->clickLink('Edit', 1);
     $this->submitNodeForm('Test 1.9 FR', 'draft');
     $this->assertLatestVersionPage($fr_node);
     $this->assertNoModerationForm($node);
@@ -326,7 +326,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Publish the Italian draft (revision 5).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 3);
+    $this->clickLink('Edit', 2);
     $this->submitNodeForm('Test 2.5 IT', 'published');
     $this->assertNotLatestVersionPage($it_node2);
     $this->assertNoModerationForm($node2);
@@ -334,7 +334,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Publish the French draft (revision 6).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 2);
+    $this->clickLink('Edit', 1);
     $this->submitNodeForm('Test 2.6 FR', 'published');
     $this->assertNotLatestVersionPage($fr_node2);
     $this->assertNoModerationForm($node2);
@@ -358,7 +358,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Create an Italian draft (revision 7).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 3);
+    $this->clickLink('Edit', 2);
     $this->submitNodeForm('Test 2.7 IT', 'draft');
     $this->assertLatestVersionPage($it_node2);
     $this->assertNoModerationForm($node2);
@@ -366,7 +366,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Create a French draft (revision 8).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 2);
+    $this->clickLink('Edit', 1);
     $this->submitNodeForm('Test 2.8 FR', 'draft');
     $this->assertLatestVersionPage($fr_node2);
     $this->assertNoModerationForm($node2);
@@ -403,7 +403,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
 
     // Publish the French draft (revision 4).
     $this->drupalGet($translate_path);
-    $this->clickLink('Edit', 2);
+    $this->clickLink('Edit', 1);
     $this->submitNodeForm('Test 3.4 FR', 'published');
     $this->assertNotLatestVersionPage($fr_node3);
     $this->assertModerationForm($node3);
@@ -462,7 +462,7 @@ class ModerationLocaleTest extends ModerationStateTestBase {
    *   A node object if a new one is being created, NULL otherwise.
    */
   protected function submitNodeForm($title, $moderation_state, $default_translation = FALSE, $langcode = 'en') {
-    $is_new = str_contains($this->getSession()->getCurrentUrl(), '/node/add/');
+    $is_new = strpos($this->getSession()->getCurrentUrl(), '/node/add/') !== FALSE;
     $edit = [
       'title[0][value]' => $title,
       'moderation_state[0][state]' => $moderation_state,

@@ -147,27 +147,6 @@ class SystemTestController extends ControllerBase implements TrustedCallbackInte
   }
 
   /**
-   * Sets messages for testing the WebAssert methods related to messages.
-   *
-   * @return array
-   *   Empty array, we just need the messages.
-   */
-  public function statusMessagesForAssertions(): array {
-    // Add a simple message of each type.
-    $this->messenger->addMessage('My Status Message', 'status');
-    $this->messenger->addMessage('My Error Message', 'error');
-    $this->messenger->addMessage('My Warning Message', 'warning');
-
-    // Add messages with special characters and/or markup.
-    $this->messenger->addStatus('This has " in the middle');
-    $this->messenger->addStatus('This has \' in the middle');
-    $this->messenger->addStatus('<em>This<span>markup will be</span> escaped</em>.');
-    $this->messenger->addStatus('Peaches & cream');
-
-    return [];
-  }
-
-  /**
    * Controller to return $_GET['destination'] for testing.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
@@ -332,8 +311,8 @@ class SystemTestController extends ControllerBase implements TrustedCallbackInte
     // the exception message can not be tested.
     // @see _drupal_shutdown_function()
     // @see \Drupal\system\Tests\System\ShutdownFunctionsTest
-    if (function_exists('fastcgi_finish_request') || ob_get_status()) {
-      return ['#markup' => 'The response will flush before shutdown functions are called.'];
+    if (function_exists('fastcgi_finish_request')) {
+      return ['#markup' => 'The function fastcgi_finish_request exists when serving the request.'];
     }
     return [];
   }

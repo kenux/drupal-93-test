@@ -7,7 +7,8 @@
  * @see phpunit.xml.dist
  */
 
-use Drupal\TestTools\PhpUnitCompatibility\ClassWriter;
+use Drupal\Component\Assertion\Handle;
+use Drupal\TestTools\PhpUnitCompatibility\PhpUnit8\ClassWriter;
 
 /**
  * Finds all valid extension directories recursively within a given directory.
@@ -23,7 +24,7 @@ function drupal_phpunit_find_extension_directories($scan_directory) {
   $extensions = [];
   $dirs = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($scan_directory, \RecursiveDirectoryIterator::FOLLOW_SYMLINKS));
   foreach ($dirs as $dir) {
-    if (str_contains($dir->getPathname(), '.info.yml')) {
+    if (strpos($dir->getPathname(), '.info.yml') !== FALSE) {
       // Cut off ".info.yml" from the filename for use as the extension name. We
       // use getRealPath() so that we can scan extensions represented by
       // directory aliases.
@@ -118,8 +119,8 @@ if (!defined('PHPUNIT_COMPOSER_INSTALL')) {
  * Populate class loader with additional namespaces for tests.
  *
  * We run this in a function to avoid setting the class loader to a global
- * that can change. This change can cause unpredictable false positives for the
- * PHPUnit global state change watcher. The class loader can be retrieved from
+ * that can change. This change can cause unpredictable false positives for
+ * phpunit's global state change watcher. The class loader can be retrieved from
  * composer at any time by requiring autoload.php.
  */
 function drupal_phpunit_populate_class_loader() {
@@ -175,12 +176,6 @@ date_default_timezone_set('Australia/Sydney');
 
 // Runtime assertions. PHPUnit follows the php.ini assert.active setting for
 // runtime assertions. By default this setting is on. Ensure exceptions are
-// thrown if an assert fails.
-assert_options(ASSERT_EXCEPTION, TRUE);
-
-// Ensure ignored deprecation patterns listed in .deprecation-ignore.txt are
-// considered in testing.
-if (getenv('SYMFONY_DEPRECATIONS_HELPER') === FALSE) {
-  $deprecation_ignore_filename = realpath(__DIR__ . "/../.deprecation-ignore.txt");
-  putenv("SYMFONY_DEPRECATIONS_HELPER=ignoreFile=$deprecation_ignore_filename");
-}
+// thrown if an assert fails, but this call does not turn runtime assertions on
+// if they weren't on already.
+Handle::register();

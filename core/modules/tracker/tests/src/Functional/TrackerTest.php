@@ -17,7 +17,6 @@ use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
  * Create and delete nodes and check for their display in the tracker listings.
  *
  * @group tracker
- * @group legacy
  */
 class TrackerTest extends BrowserTestBase {
 
@@ -56,9 +55,6 @@ class TrackerTest extends BrowserTestBase {
    */
   protected $otherUser;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -101,6 +97,12 @@ class TrackerTest extends BrowserTestBase {
     // Assert cache tags for the action/tabs blocks, visible node, and node list
     // cache tag.
     $expected_tags = Cache::mergeTags($published->getCacheTags(), $published->getOwner()->getCacheTags());
+    // Because the 'user.permissions' cache context is being optimized away.
+    $role_tags = [];
+    foreach ($this->user->getRoles() as $rid) {
+      $role_tags[] = "config:user.role.$rid";
+    }
+    $expected_tags = Cache::mergeTags($expected_tags, $role_tags);
     $block_tags = [
       'block_view',
       'local_task',
@@ -183,6 +185,12 @@ class TrackerTest extends BrowserTestBase {
     $expected_tags = Cache::mergeTags($my_published->getCacheTags(), $my_published->getOwner()->getCacheTags());
     $expected_tags = Cache::mergeTags($expected_tags, $other_published_my_comment->getCacheTags());
     $expected_tags = Cache::mergeTags($expected_tags, $other_published_my_comment->getOwner()->getCacheTags());
+    // Because the 'user.permissions' cache context is being optimized away.
+    $role_tags = [];
+    foreach ($this->user->getRoles() as $rid) {
+      $role_tags[] = "config:user.role.$rid";
+    }
+    $expected_tags = Cache::mergeTags($expected_tags, $role_tags);
     $block_tags = [
       'block_view',
       'local_task',
@@ -475,8 +483,8 @@ class TrackerTest extends BrowserTestBase {
   public function assertHistoryMetadata(int $node_id, int $node_timestamp, int $node_last_comment_timestamp, bool $library_is_present = TRUE): void {
     $settings = $this->getDrupalSettings();
     $this->assertSame($library_is_present, isset($settings['ajaxPageState']) && in_array('tracker/history', explode(',', $settings['ajaxPageState']['libraries'])), 'drupal.tracker-history library is present.');
-    $this->assertSession()->elementsCount('xpath', '//table/tbody/tr/td[@data-history-node-id="' . $node_id . '" and @data-history-node-timestamp="' . $node_timestamp . '"]', 1);
-    $this->assertSession()->elementsCount('xpath', '//table/tbody/tr/td[@data-history-node-last-comment-timestamp="' . $node_last_comment_timestamp . '"]', 1);
+    $this->assertCount(1, $this->xpath('//table/tbody/tr/td[@data-history-node-id="' . $node_id . '" and @data-history-node-timestamp="' . $node_timestamp . '"]'), 'Tracker table cell contains the data-history-node-id and data-history-node-timestamp attributes for the node.');
+    $this->assertCount(1, $this->xpath('//table/tbody/tr/td[@data-history-node-last-comment-timestamp="' . $node_last_comment_timestamp . '"]'), 'Tracker table cell contains the data-history-node-last-comment-timestamp attribute for the node.');
   }
 
 }

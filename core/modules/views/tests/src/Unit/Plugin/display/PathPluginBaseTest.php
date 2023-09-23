@@ -73,32 +73,12 @@ class PathPluginBaseTest extends UnitTestCase {
 
     $config = [
       'views.settings' => [
+        'skip_cache' => TRUE,
         'display_extenders' => [],
       ],
     ];
 
     $container->set('config.factory', $this->getConfigFactoryStub($config));
-
-    $language = $this->createMock('\Drupal\Core\Language\LanguageInterface');
-    $language->expects($this->any())
-      ->method('getId')
-      ->willReturn('nl');
-
-    $language_manager = $this->getMockBuilder('Drupal\Core\Language\LanguageManagerInterface')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $language_manager->expects($this->any())
-      ->method('getCurrentLanguage')
-      ->willReturn($language);
-    $container->set('language_manager', $language_manager);
-
-    $cache = $this->getMockBuilder('Drupal\Core\Cache\CacheBackendInterface')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $cache->expects($this->any())
-      ->method('get')
-      ->willReturn([]);
-    $container->set('cache.data', $cache);
 
     \Drupal::setContainer($container);
   }
@@ -553,7 +533,7 @@ class PathPluginBaseTest extends UnitTestCase {
     ];
     $this->pathPlugin->initDisplay($view, $display);
     $route_name = $this->pathPlugin->getRouteName();
-    // Ensure that the expected route name is returned.
+    // Ensure that the expected routename is returned.
     $this->assertEquals('view.test_id.page_1', $route_name);
   }
 
@@ -566,10 +546,7 @@ class PathPluginBaseTest extends UnitTestCase {
       ->getMock();
     $view_entity->expects($this->any())
       ->method('id')
-      ->willReturn('test_id');
-    $view_entity->expects($this->any())
-      ->method('getCacheTags')
-      ->willReturn([]);
+      ->will($this->returnValue('test_id'));
 
     $view = $this->getMockBuilder('Drupal\views\ViewExecutable')
       ->disableOriginalConstructor()
@@ -577,12 +554,15 @@ class PathPluginBaseTest extends UnitTestCase {
 
     $view->storage = $view_entity;
 
+    // Skip views options caching.
+    $view->editing = TRUE;
+
     $access_plugin = $this->getMockBuilder('Drupal\views\Plugin\views\access\AccessPluginBase')
       ->disableOriginalConstructor()
       ->getMockForAbstractClass();
     $this->accessPluginManager->expects($this->any())
       ->method('createInstance')
-      ->willReturn($access_plugin);
+      ->will($this->returnValue($access_plugin));
 
     return [$view, $view_entity, $access_plugin];
   }

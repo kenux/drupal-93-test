@@ -11,7 +11,6 @@ use Drupal\migrate\Row;
 use Drupal\migrate_drupal\Plugin\MigrateFieldInterface;
 use Drupal\migrate_drupal\Plugin\MigrateFieldPluginManagerInterface;
 use Drupal\Tests\migrate\Unit\MigrateTestCase;
-use Prophecy\Prophecy\ObjectProphecy;
 
 /**
  * Tests the ProcessField migrate process plugin.
@@ -20,31 +19,6 @@ use Prophecy\Prophecy\ObjectProphecy;
  * @group field
  */
 class ProcessFieldTest extends MigrateTestCase {
-
-  /**
-   * @var \Drupal\migrate_drupal\Plugin\MigrateFieldPluginManagerInterface|\Prophecy\Prophecy\ObjectProphecy
-   */
-  protected MigrateFieldPluginManagerInterface|ObjectProphecy $fieldManager;
-
-  /**
-   * @var \Drupal\migrate_drupal\Plugin\MigrateFieldInterface|\Prophecy\Prophecy\ObjectProphecy
-   */
-  protected MigrateFieldInterface|ObjectProphecy $fieldPlugin;
-
-  /**
-   * @var \Drupal\migrate\MigrateExecutable|\Prophecy\Prophecy\ObjectProphecy
-   */
-  protected MigrateExecutable|ObjectProphecy $migrateExecutable;
-
-  /**
-   * @var \Drupal\migrate\Plugin\MigrationInterface|\Prophecy\Prophecy\ObjectProphecy
-   */
-  protected MigrationInterface|ObjectProphecy $migration;
-
-  /**
-   * @var \Drupal\migrate\Row|\Prophecy\Prophecy\ObjectProphecy
-   */
-  protected Row|ObjectProphecy $row;
 
   /**
    * {@inheritdoc}
@@ -83,7 +57,7 @@ class ProcessFieldTest extends MigrateTestCase {
     if ($method) {
       $this->fieldPlugin->$method($this->row->reveal())->willReturn($expected_value);
     }
-    $plugin = new ProcessField(['method' => $method], $value, [], $this->fieldManager->reveal(), $this->migration->reveal());
+    $this->plugin = new ProcessField(['method' => $method], $value, [], $this->fieldManager->reveal(), $this->migration->reveal());
 
     if ($migrate_exception) {
       $this->expectException(MigrateException::class);
@@ -95,7 +69,7 @@ class ProcessFieldTest extends MigrateTestCase {
       $this->fieldManager->getPluginIdFromFieldType()->willThrow($exception);
     }
 
-    $transformed_value = $plugin->transform($value, $this->migrateExecutable->reveal(), $this->row->reveal(), 'foo');
+    $transformed_value = $this->plugin->transform($value, $this->migrateExecutable->reveal(), $this->row->reveal(), 'foo');
     $this->assertSame($transformed_value, $expected_value);
   }
 

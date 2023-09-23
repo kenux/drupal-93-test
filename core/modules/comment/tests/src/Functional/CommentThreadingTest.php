@@ -14,17 +14,19 @@ class CommentThreadingTest extends CommentTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
   /**
    * Tests the comment threading.
    */
   public function testCommentThreading() {
     // Set comments to have a subject with preview disabled.
+    $this->drupalLogin($this->adminUser);
     $this->setCommentPreview(DRUPAL_DISABLED);
     $this->setCommentForm(TRUE);
     $this->setCommentSubject(TRUE);
     $this->setCommentSettings('default_mode', CommentManagerInterface::COMMENT_MODE_THREADED, 'Comment paging changed.');
+    $this->drupalLogout();
 
     // Create a node.
     $this->drupalLogin($this->webUser);
@@ -135,22 +137,16 @@ class CommentThreadingTest extends CommentTestBase {
   protected function assertParentLink(int $cid, int $pid): void {
     // This pattern matches a markup structure like:
     // @code
-    // <article id="comment-2">
-    //   <p>
-    //     In reply to
+    // <a id="comment-2"></a>
+    // <article>
+    //   <p class="parent">
     //     <a href="...comment-1"></a>
     //   </p>
     // </article>
     // @endcode
-    $pattern = "//article[@id='comment-$cid']//p/a[contains(@href, 'comment-$pid')]";
+    $pattern = "//article[@id='comment-$cid']//p[contains(@class, 'parent')]//a[contains(@href, 'comment-$pid')]";
 
     $this->assertSession()->elementExists('xpath', $pattern);
-
-    // A parent link is always accompanied by the text "In reply to".
-    // If we don't assert this text here, then the assertNoParentLink()
-    // method is not effective.
-    $pattern = "//article[@id='comment-$cid']";
-    $this->assertSession()->elementTextContains('xpath', $pattern, 'In reply to');
   }
 
   /**
@@ -162,9 +158,16 @@ class CommentThreadingTest extends CommentTestBase {
    * @internal
    */
   protected function assertNoParentLink(int $cid): void {
-    $pattern = "//article[@id='comment-$cid']";
-    // A parent link is always accompanied by the text "In reply to".
-    $this->assertSession()->elementTextNotContains('xpath', $pattern, 'In reply to');
+    // This pattern matches a markup structure like:
+    // @code
+    // <a id="comment-2"></a>
+    // <article>
+    //   <p class="parent"></p>
+    // </article>
+    // @endcode
+
+    $pattern = "//article[@id='comment-$cid']//p[contains(@class, 'parent')]";
+    $this->assertSession()->elementNotExists('xpath', $pattern);
   }
 
 }

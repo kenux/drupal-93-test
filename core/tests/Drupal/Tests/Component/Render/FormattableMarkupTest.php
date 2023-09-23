@@ -35,44 +35,21 @@ class FormattableMarkupTest extends TestCase {
    * @covers ::jsonSerialize
    */
   public function testToString() {
-    $string = 'Can I have a @replacement';
+    $string = 'Can I please have a @replacement';
     $formattable_string = new FormattableMarkup($string, ['@replacement' => 'kitten']);
     $text = (string) $formattable_string;
-    $this->assertEquals('Can I have a kitten', $text);
+    $this->assertEquals('Can I please have a kitten', $text);
     $text = $formattable_string->jsonSerialize();
-    $this->assertEquals('Can I have a kitten', $text);
+    $this->assertEquals('Can I please have a kitten', $text);
   }
 
   /**
    * @covers ::count
    */
   public function testCount() {
-    $string = 'Can I have a @replacement';
+    $string = 'Can I please have a @replacement';
     $formattable_string = new FormattableMarkup($string, ['@replacement' => 'kitten']);
     $this->assertEquals(strlen($string), $formattable_string->count());
-  }
-
-  /**
-   * @covers ::__toString
-   * @dataProvider providerTestNullPlaceholder
-   * @group legacy
-   */
-  public function testNullPlaceholder(string $expected, string $string, array $arguments, string $expected_deprecation): void {
-    $this->expectDeprecation($expected_deprecation);
-    $this->assertEquals($expected, (string) new FormattableMarkup($string, $arguments));
-  }
-
-  /**
-   * Data provider for FormattableMarkupTest::testNullPlaceholder().
-   *
-   * @return array
-   */
-  public function providerTestNullPlaceholder() {
-    return [
-      ['', '@empty', ['@empty' => NULL], 'Deprecated NULL placeholder value for key (@empty) in: "@empty". This will throw a PHP error in drupal:11.0.0. See https://www.drupal.org/node/3318826'],
-      ['', ':empty', [':empty' => NULL], 'Deprecated NULL placeholder value for key (:empty) in: ":empty". This will throw a PHP error in drupal:11.0.0. See https://www.drupal.org/node/3318826'],
-      ['<em class="placeholder"></em>', '%empty', ['%empty' => NULL], 'Deprecated NULL placeholder value for key (%%empty) in: "%%empty". This will throw a PHP error in drupal:11.0.0. See https://www.drupal.org/node/3318826'],
-    ];
   }
 
   /**
@@ -117,13 +94,22 @@ class FormattableMarkupTest extends TestCase {
    */
   public function providerTestUnexpectedPlaceholder() {
     return [
-      ['Non alpha, non-allowed starting character: ~placeholder', ['~placeholder' => 'replaced'], E_USER_WARNING, 'Invalid placeholder (~placeholder) with string: "Non alpha, non-allowed starting character: ~placeholder"'],
-      ['Alpha starting character: placeholder', ['placeholder' => 'replaced'], NULL, ''],
+      ['Non alpha starting character: ~placeholder', ['~placeholder' => 'replaced'], E_USER_WARNING, 'Invalid placeholder (~placeholder) with string: "Non alpha starting character: ~placeholder"'],
+      ['Alpha starting character: placeholder', ['placeholder' => 'replaced'], E_USER_WARNING, 'Invalid placeholder (placeholder) with string: "Alpha starting character: placeholder"'],
       // Ensure that where the placeholder is located in the string is
       // irrelevant.
-      ['placeholder', ['placeholder' => 'replaced'], NULL, ''],
-      ['No replacements', ['foo' => 'bar'], NULL, ''],
+      ['placeholder', ['placeholder' => 'replaced'], E_USER_WARNING, 'Invalid placeholder (placeholder) with string: "placeholder"'],
     ];
+  }
+
+  /**
+   * @group legacy
+   */
+  public function testNoReplacementUnsupportedVariable() {
+    $this->expectDeprecation('Support for keys without a placeholder prefix is deprecated in Drupal 9.1.0 and will be removed in Drupal 10.0.0. Invalid placeholder (foo) with string: "No replacements"');
+    $markup = new FormattableMarkup('No replacements', ['foo' => 'bar']);
+    // Cast it to a string which will generate the deprecation notice.
+    $output = (string) $markup;
   }
 
 }

@@ -4,7 +4,6 @@ namespace Drupal\Tests\comment\Functional\Rest;
 
 use Drupal\comment\Entity\Comment;
 use Drupal\comment\Entity\CommentType;
-use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
 use Drupal\comment\Tests\CommentTestTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\entity_test\Entity\EntityTest;
@@ -95,7 +94,6 @@ abstract class CommentResourceTestBase extends EntityResourceTestBase {
     $commented_entity = EntityTest::create([
       'name' => 'Camelids',
       'type' => 'bar',
-      'comment' => CommentItemInterface::OPEN,
     ]);
     $commented_entity->save();
 
@@ -319,17 +317,16 @@ abstract class CommentResourceTestBase extends EntityResourceTestBase {
    */
   protected function getExpectedUnauthorizedAccessMessage($method) {
     switch ($method) {
-      case 'GET':
+      case 'GET';
         return "The 'access comments' permission is required and the comment must be published.";
 
-      case 'POST':
+      case 'POST';
         return "The 'post comments' permission is required.";
 
-      case 'PATCH':
+      case 'PATCH';
         return "The 'edit own comments' permission is required, the user must be the comment author, and the comment must be published.";
 
       case 'DELETE':
-      default:
         // \Drupal\comment\CommentAccessControlHandler::checkAccess() does not
         // specify a reason for not allowing a comment to be deleted.
         return '';

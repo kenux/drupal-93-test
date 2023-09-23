@@ -45,10 +45,7 @@ abstract class ImageFieldTestBase extends BrowserTestBase {
    */
   protected $adminUser;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
+  protected function setUp() {
     parent::setUp();
 
     // Create Basic page and Article node types.

@@ -10,9 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Provides a console command to generate proxy classes.
- *
- * @see lazy_services
- * @see core/scripts/generate-proxy.sh
  */
 class GenerateProxyClassCommand extends Command {
 
@@ -53,7 +50,7 @@ class GenerateProxyClassCommand extends Command {
   /**
    * {@inheritdoc}
    */
-  protected function execute(InputInterface $input, OutputInterface $output): int {
+  protected function execute(InputInterface $input, OutputInterface $output) {
     $class_name = ltrim($input->getArgument('class_name'), '\\');
     $namespace_root = $input->getArgument('namespace_root_path');
 

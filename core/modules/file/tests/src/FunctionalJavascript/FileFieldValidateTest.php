@@ -7,10 +7,8 @@ use Drupal\Tests\file\Functional\FileFieldCreationTrait;
 use Drupal\Tests\TestFileCreationTrait;
 
 /**
- * Tests file field validation functions.
- *
- * Values validated include the file type, max file size, max size per node,
- * and whether the field is required.
+ * Tests validation functions such as file type, max file size, max size per
+ * node, and required.
  *
  * @group file
  */
@@ -33,7 +31,7 @@ class FileFieldValidateTest extends WebDriverTestBase {
    * Tests the validation message is displayed only once for ajax uploads.
    */
   public function testAjaxValidationMessage() {
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->drupalCreateContentType(['type' => 'article', 'name' => 'Article']);
     $this->createFileField($field_name, 'node', 'article', [], ['file_extensions' => 'txt']);
 

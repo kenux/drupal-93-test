@@ -56,11 +56,8 @@ class DefaultViewsTest extends ViewTestBase {
     'glossary' => ['all'],
   ];
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE, $modules = []): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
 
     $this->drupalPlaceBlock('page_title_block');
 
@@ -70,7 +67,7 @@ class DefaultViewsTest extends ViewTestBase {
     $vocabulary = Vocabulary::create([
       'name' => $this->randomMachineName(),
       'description' => $this->randomMachineName(),
-      'vid' => $this->randomMachineName(),
+      'vid' => mb_strtolower($this->randomMachineName()),
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
       'help' => '',
       'nodes' => ['page' => 'page'],
@@ -79,7 +76,7 @@ class DefaultViewsTest extends ViewTestBase {
     $vocabulary->save();
 
     // Create a field.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
 
     $handler_settings = [
       'target_bundles' => [

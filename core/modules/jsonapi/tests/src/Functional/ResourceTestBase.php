@@ -10,7 +10,6 @@ use Drupal\Core\Access\AccessResultReasonInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\CacheableResponseInterface;
-use Drupal\Core\Cache\CacheRedirect;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\ContentEntityNullStorage;
@@ -217,12 +216,10 @@ abstract class ResourceTestBase extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp(): void {
+  public function setUp() {
     parent::setUp();
 
     $this->serializer = $this->container->get('jsonapi.serializer');
-
-    $this->config('system.logging')->set('error_level', ERROR_REPORTING_HIDE)->save();
 
     // Ensure the anonymous user role has no permissions at all.
     $user_role = Role::load(RoleInterface::ANONYMOUS_ID);
@@ -610,14 +607,21 @@ abstract class ResourceTestBase extends BrowserTestBase {
   /**
    * Sets up the necessary authorization.
    *
+   * In case of a test verifying publicly accessible REST resources: grant
+   * permissions to the anonymous user role.
+   *
+   * In case of a test verifying behavior when using a particular authentication
+   * provider: create a user with a particular set of permissions.
+   *
    * Because of the $method parameter, it's possible to first set up
-   * authorization for only GET, then add POST, et cetera. This then also
+   * authentication for only GET, then add POST, et cetera. This then also
    * allows for verifying a 403 in case of missing authorization.
    *
    * @param string $method
-   *   The HTTP method for which to set up authorization.
+   *   The HTTP method for which to set up authentication.
    *
-   * @see ::grantPermissionsToTestedRole()
+   * @see ::grantPermissionsToAnonymousRole()
+   * @see ::grantPermissionsToAuthenticatedRole()
    */
   abstract protected function setUpAuthorization($method);
 
@@ -728,14 +732,7 @@ abstract class ResourceTestBase extends BrowserTestBase {
     // Expected cache tags: X-Drupal-Cache-Tags header.
     $this->assertSame($expected_cache_tags !== FALSE, $response->hasHeader('X-Drupal-Cache-Tags'));
     if (is_array($expected_cache_tags)) {
-      $actual_cache_tags = explode(' ', $response->getHeader('X-Drupal-Cache-Tags')[0]);
-
-      $tag = 'config:system.logging';
-      if (!in_array($tag, $expected_cache_tags) && in_array($tag, $actual_cache_tags)) {
-        $expected_cache_tags[] = $tag;
-      }
-
-      $this->assertEqualsCanonicalizing($expected_cache_tags, $actual_cache_tags);
+      $this->assertEqualsCanonicalizing($expected_cache_tags, explode(' ', $response->getHeader('X-Drupal-Cache-Tags')[0]));
     }
 
     // Expected cache contexts: X-Drupal-Cache-Contexts header.
@@ -991,16 +988,18 @@ abstract class ResourceTestBase extends BrowserTestBase {
     // @see \Drupal\jsonapi\EventSubscriber\ResourceResponseSubscriber::flattenResponse()
     $cache_items = $this->container->get('database')
       ->select('cache_dynamic_page_cache', 'cdp')
-      ->fields('cdp', ['data'])
+      ->fields('cdp', ['cid', 'data'])
       ->condition('cid', '%[route]=jsonapi.%', 'LIKE')
       ->execute()
-      ->fetchAll();
-    $this->assertLessThanOrEqual(5, count($cache_items));
+      ->fetchAllAssoc('cid');
+    $this->assertGreaterThanOrEqual(2, count($cache_items));
+    $found_cache_redirect = FALSE;
     $found_cached_200_response = FALSE;
     $other_cached_responses_are_4xx = TRUE;
-    foreach ($cache_items as $cache_item) {
-      $cached_response = unserialize($cache_item->data);
-      if (!$cached_response instanceof CacheRedirect) {
+    foreach ($cache_items as $cid => $cache_item) {
+      $cached_data = unserialize($cache_item->data);
+      if (!isset($cached_data['#cache_redirect'])) {
+        $cached_response = $cached_data['#response'];
         if ($cached_response->getStatusCode() === 200) {
           $found_cached_200_response = TRUE;
         }
@@ -1010,7 +1009,11 @@ abstract class ResourceTestBase extends BrowserTestBase {
         $this->assertNotInstanceOf(ResourceResponse::class, $cached_response);
         $this->assertInstanceOf(CacheableResponseInterface::class, $cached_response);
       }
+      else {
+        $found_cache_redirect = TRUE;
+      }
     }
+    $this->assertTrue($found_cache_redirect);
     $this->assertSame($dynamic_cache !== 'UNCACHEABLE' || isset($dynamic_cache_label_only) && $dynamic_cache_label_only !== 'UNCACHEABLE', $found_cached_200_response);
     $this->assertTrue($other_cached_responses_are_4xx);
 
@@ -1038,7 +1041,7 @@ abstract class ResourceTestBase extends BrowserTestBase {
     ];
     $header_cleaner = function ($headers) use ($ignored_headers) {
       foreach ($headers as $header => $value) {
-        if (str_starts_with($header, 'X-Drupal-Assertion-') || in_array($header, $ignored_headers)) {
+        if (strpos($header, 'X-Drupal-Assertion-') === 0 || in_array($header, $ignored_headers)) {
           unset($headers[$header]);
         }
       }
@@ -1960,7 +1963,8 @@ abstract class ResourceTestBase extends BrowserTestBase {
   public function testPostIndividual() {
     // @todo Remove this in https://www.drupal.org/node/2300677.
     if ($this->entity instanceof ConfigEntityInterface) {
-      $this->markTestSkipped('POSTing config entities is not yet supported.');
+      $this->assertTrue(TRUE, 'POSTing config entities is not yet supported.');
+      return;
     }
 
     // Try with all of the following request bodies.
@@ -2175,7 +2179,8 @@ abstract class ResourceTestBase extends BrowserTestBase {
   public function testPatchIndividual() {
     // @todo Remove this in https://www.drupal.org/node/2300677.
     if ($this->entity instanceof ConfigEntityInterface) {
-      $this->markTestSkipped('PATCHing config entities is not yet supported.');
+      $this->assertTrue(TRUE, 'PATCHing config entities is not yet supported.');
+      return;
     }
 
     $prior_revision_id = (int) $this->entityLoadUnchanged($this->entity->id())->getRevisionId();
@@ -2374,7 +2379,7 @@ abstract class ResourceTestBase extends BrowserTestBase {
     $doc_multi_value_tests['data']['attributes']['field_rest_test_multivalue'] = $this->entity->get('field_rest_test_multivalue')->getValue();
     $doc_remove_item = $doc_multi_value_tests;
     unset($doc_remove_item['data']['attributes']['field_rest_test_multivalue'][0]);
-    $request_options[RequestOptions::BODY] = Json::encode($doc_remove_item);
+    $request_options[RequestOptions::BODY] = Json::encode($doc_remove_item, 'api_json');
     $response = $this->request('PATCH', $url, $request_options);
     $this->assertResourceResponse(200, FALSE, $response);
     $updated_entity = $this->entityLoadUnchanged($this->entity->id());
@@ -2492,7 +2497,8 @@ abstract class ResourceTestBase extends BrowserTestBase {
   public function testDeleteIndividual() {
     // @todo Remove this in https://www.drupal.org/node/2300677.
     if ($this->entity instanceof ConfigEntityInterface) {
-      $this->markTestSkipped('DELETEing config entities is not yet supported.');
+      $this->assertTrue(TRUE, 'DELETEing config entities is not yet supported.');
+      return;
     }
 
     // The URL and Guzzle request options that will be used in this test. The
@@ -2655,7 +2661,7 @@ abstract class ResourceTestBase extends BrowserTestBase {
       $expected_cacheability->setCacheTags($this->getExpectedCacheTags($field_set));
       $expected_cacheability->setCacheContexts($this->getExpectedCacheContexts($field_set));
       // This tests sparse field sets on included entities.
-      if (str_starts_with($type, 'nested')) {
+      if (strpos($type, 'nested') === 0) {
         $this->grantPermissionsToTestedRole(['access user profiles']);
         $query['fields[user--user]'] = implode(',', $field_set);
         $query['include'] = 'uid';
@@ -2771,6 +2777,28 @@ abstract class ResourceTestBase extends BrowserTestBase {
       return;
     }
     assert($this->entity instanceof RevisionableInterface);
+
+    // JSON:API will only support node and media revisions until Drupal core has
+    // a generic revision access API.
+    if (!static::$resourceTypeIsVersionable) {
+      $this->setUpRevisionAuthorization('GET');
+      $url = Url::fromRoute(sprintf('jsonapi.%s.individual', static::$resourceTypeName), ['entity' => $this->entity->uuid()])->setAbsolute();
+      $url->setOption('query', ['resourceVersion' => 'id:' . $this->entity->getRevisionId()]);
+      $request_options = [];
+      $request_options[RequestOptions::HEADERS]['Accept'] = 'application/vnd.api+json';
+      $request_options = NestedArray::mergeDeep($request_options, $this->getAuthenticationRequestOptions());
+      $response = $this->request('GET', $url, $request_options);
+      $detail = 'JSON:API does not yet support resource versioning for this resource type.';
+      $detail .= ' For context, see https://www.drupal.org/project/drupal/issues/2992833#comment-12818258.';
+      $detail .= ' To contribute, see https://www.drupal.org/project/drupal/issues/2350939 and https://www.drupal.org/project/drupal/issues/2809177.';
+      $expected_cache_contexts = [
+        'url.path',
+        'url.query_args:resourceVersion',
+        'url.site',
+      ];
+      $this->assertResourceErrorResponse(501, $detail, $url, $response, FALSE, ['http_response'], $expected_cache_contexts);
+      return;
+    }
 
     // Add a field to modify in order to test revisions.
     FieldStorageConfig::create([
@@ -2931,10 +2959,6 @@ abstract class ResourceTestBase extends BrowserTestBase {
 
     // Install content_moderation module.
     $this->assertTrue($this->container->get('module_installer')->install(['content_moderation'], TRUE), 'Installed modules.');
-
-    if (!\Drupal::service('content_moderation.moderation_information')->canModerateEntitiesOfEntityType($this->entity->getEntityType())) {
-      return;
-    }
 
     // Set up an editorial workflow.
     $workflow = $this->createEditorialWorkflow();
@@ -3138,14 +3162,9 @@ abstract class ResourceTestBase extends BrowserTestBase {
       [$revision_id, $relationship_url, $related_url] = $revision_case;
       // Load the revision that will be requested.
       $this->entityStorage->resetCache([$entity->id()]);
-      if ($revision_id === NULL) {
-        $revision = $this->entityStorage->load($entity->id());
-      }
-      else {
-        /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
-        $storage = $this->entityStorage;
-        $revision = $storage->loadRevision($revision_id);
-      }
+      $revision = is_null($revision_id)
+        ? $this->entityStorage->load($entity->id())
+        : $this->entityStorage->loadRevision($revision_id);
       // Request the relationship resource without access to the relationship
       // field.
       $actual_response = $this->request('GET', $relationship_url, $request_options);
@@ -3170,14 +3189,9 @@ abstract class ResourceTestBase extends BrowserTestBase {
       [$revision_id, $relationship_url, $related_url] = $revision_case;
       // Load the revision that will be requested.
       $this->entityStorage->resetCache([$entity->id()]);
-      if ($revision_id === NULL) {
-        $revision = $this->entityStorage->load($entity->id());
-      }
-      else {
-        /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
-        $storage = $this->entityStorage;
-        $revision = $storage->loadRevision($revision_id);
-      }
+      $revision = is_null($revision_id)
+        ? $this->entityStorage->load($entity->id())
+        : $this->entityStorage->loadRevision($revision_id);
       // Request the relationship resource after granting access to the
       // relationship field.
       $actual_response = $this->request('GET', $relationship_url, $request_options);

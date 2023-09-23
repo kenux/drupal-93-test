@@ -5,13 +5,13 @@ namespace Drupal\user\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
-use Drupal\Core\Render\BareHtmlPageRendererInterface;
 use Drupal\Core\Url;
 use Drupal\user\UserAuthInterface;
 use Drupal\user\UserInterface;
 use Drupal\user\UserStorageInterface;
 use Drupal\user\UserFloodControlInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Provides a user login form.
@@ -49,13 +49,6 @@ class UserLoginForm extends FormBase {
   protected $renderer;
 
   /**
-   * The bare HTML renderer.
-   *
-   * @var \Drupal\Core\Render\BareHtmlPageRendererInterface
-   */
-  protected $bareHtmlPageRenderer;
-
-  /**
    * Constructs a new UserLoginForm.
    *
    * @param \Drupal\user\UserFloodControlInterface $user_flood_control
@@ -66,15 +59,16 @@ class UserLoginForm extends FormBase {
    *   The user authentication object.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
-   * @param \Drupal\Core\Render\BareHtmlPageRendererInterface $bare_html_renderer
-   *   The renderer.
    */
-  public function __construct(UserFloodControlInterface $user_flood_control, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer, BareHtmlPageRendererInterface $bare_html_renderer) {
+  public function __construct($user_flood_control, UserStorageInterface $user_storage, UserAuthInterface $user_auth, RendererInterface $renderer) {
+    if (!$user_flood_control instanceof UserFloodControlInterface) {
+      @trigger_error('Passing the flood service to ' . __METHOD__ . ' is deprecated in drupal:9.1.0 and is replaced by user.flood_control in drupal:10.0.0. See https://www.drupal.org/node/3067148', E_USER_DEPRECATED);
+      $user_flood_control = \Drupal::service('user.flood_control');
+    }
     $this->userFloodControl = $user_flood_control;
     $this->userStorage = $user_storage;
     $this->userAuth = $user_auth;
     $this->renderer = $renderer;
-    $this->bareHtmlPageRenderer = $bare_html_renderer;
   }
 
   /**
@@ -85,8 +79,7 @@ class UserLoginForm extends FormBase {
       $container->get('user.flood_control'),
       $container->get('entity_type.manager')->getStorage('user'),
       $container->get('user.auth'),
-      $container->get('renderer'),
-      $container->get('bare_html_page_renderer')
+      $container->get('renderer')
     );
   }
 
@@ -109,6 +102,7 @@ class UserLoginForm extends FormBase {
       '#title' => $this->t('Username'),
       '#size' => 60,
       '#maxlength' => UserInterface::USERNAME_MAX_LENGTH,
+      '#description' => $this->t('Enter your @s username.', ['@s' => $config->get('name')]),
       '#required' => TRUE,
       '#attributes' => [
         'autocorrect' => 'none',
@@ -122,6 +116,7 @@ class UserLoginForm extends FormBase {
       '#type' => 'password',
       '#title' => $this->t('Password'),
       '#size' => 60,
+      '#description' => $this->t('Enter the password that accompanies your username.'),
       '#required' => TRUE,
     ];
 
@@ -242,12 +237,16 @@ class UserLoginForm extends FormBase {
           // We did not find a uid, so the limit is IP-based.
           $message = $this->t('Too many failed login attempts from your IP address. This IP address is temporarily blocked. Try again later or <a href=":url">request a new password</a>.', [':url' => Url::fromRoute('user.pass')->toString()]);
         }
-        $response = $this->bareHtmlPageRenderer->renderBarePage(['#markup' => $message], $this->t('Login failed'), 'maintenance_page');
-        $response->setStatusCode(403);
-        $form_state->setResponse($response);
+        $form_state->setResponse(new Response($message, 403));
       }
       else {
-        $form_state->setErrorByName('name', $this->t('Unrecognized username or password. <a href=":password">Forgot your password?</a>', [':password' => Url::fromRoute('user.pass')->toString()]));
+        // Use $form_state->getUserInput() in the error message to guarantee
+        // that we send exactly what the user typed in. The value from
+        // $form_state->getValue() may have been modified by validation
+        // handlers that ran earlier than this one.
+        $user_input = $form_state->getUserInput();
+        $query = isset($user_input['name']) ? ['name' => $user_input['name']] : [];
+        $form_state->setErrorByName('name', $this->t('Unrecognized username or password. <a href=":password">Forgot your password?</a>', [':password' => Url::fromRoute('user.pass', [], ['query' => $query])->toString()]));
         $accounts = $this->userStorage->loadByProperties(['name' => $form_state->getValue('name')]);
         if (!empty($accounts)) {
           $this->logger('user')->notice('Login attempt failed for %user.', ['%user' => $form_state->getValue('name')]);

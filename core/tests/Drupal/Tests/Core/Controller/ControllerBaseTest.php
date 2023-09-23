@@ -18,12 +18,7 @@ class ControllerBaseTest extends UnitTestCase {
    */
   protected $controllerBase;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->controllerBase = $this->getMockForAbstractClass('Drupal\Core\Controller\ControllerBase');
   }
 
@@ -44,10 +39,11 @@ class ControllerBaseTest extends UnitTestCase {
     $container->expects($this->once())
       ->method('get')
       ->with('config.factory')
-      ->willReturn($config_factory);
+      ->will($this->returnValue($config_factory));
     \Drupal::setContainer($container);
 
     $config_method = new \ReflectionMethod('Drupal\Core\Controller\ControllerBase', 'config');
+    $config_method->setAccessible(TRUE);
 
     // Call config twice to ensure that the container is just called once.
     $config = $config_method->invoke($this->controllerBase, 'config_name');

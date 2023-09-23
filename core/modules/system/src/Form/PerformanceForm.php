@@ -3,7 +3,6 @@
 namespace Drupal\system\Form;
 
 use Drupal\Core\Asset\AssetCollectionOptimizerInterface;
-use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -52,8 +51,6 @@ class PerformanceForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param \Drupal\Core\Config\TypedConfigManagerInterface $typedConfigManager
-   *   The typed config manager.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Core\Asset\AssetCollectionOptimizerInterface $css_collection_optimizer
@@ -63,8 +60,8 @@ class PerformanceForm extends ConfigFormBase {
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, TypedConfigManagerInterface $typedConfigManager, DateFormatterInterface $date_formatter, AssetCollectionOptimizerInterface $css_collection_optimizer, AssetCollectionOptimizerInterface $js_collection_optimizer, ModuleHandlerInterface $module_handler) {
-    parent::__construct($config_factory, $typedConfigManager);
+  public function __construct(ConfigFactoryInterface $config_factory, DateFormatterInterface $date_formatter, AssetCollectionOptimizerInterface $css_collection_optimizer, AssetCollectionOptimizerInterface $js_collection_optimizer, ModuleHandlerInterface $module_handler) {
+    parent::__construct($config_factory);
 
     $this->dateFormatter = $date_formatter;
     $this->cssCollectionOptimizer = $css_collection_optimizer;
@@ -78,7 +75,6 @@ class PerformanceForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('config.typed'),
       $container->get('date.formatter'),
       $container->get('asset.css.collection_optimizer'),
       $container->get('asset.js.collection_optimizer'),
@@ -108,6 +104,18 @@ class PerformanceForm extends ConfigFormBase {
 
     $config = $this->config('system.performance');
 
+    $form['clear_cache'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Clear cache'),
+      '#open' => TRUE,
+    ];
+
+    $form['clear_cache']['clear'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Clear all caches'),
+      '#submit' => ['::submitCacheClear'],
+    ];
+
     $form['caching'] = [
       '#type' => 'details',
       '#title' => $this->t('Caching'),
@@ -130,12 +138,12 @@ class PerformanceForm extends ConfigFormBase {
       '#access' => !$this->moduleHandler->moduleExists('page_cache'),
     ];
 
-    $directory = 'assets://';
+    $directory = 'public://';
     $is_writable = is_dir($directory) && is_writable($directory);
     $disabled = !$is_writable;
     $disabled_message = '';
     if (!$is_writable) {
-      $disabled_message = ' ' . $this->t('<strong class="error">Set up the <a href=":file-system">optimized assets file system path</a> to make these optimizations available.</strong>', [':file-system' => Url::fromRoute('system.file_system_settings')->toString()]);
+      $disabled_message = ' ' . $this->t('<strong class="error">Set up the <a href=":file-system">public files directory</a> to make these optimizations available.</strong>', [':file-system' => Url::fromRoute('system.file_system_settings')->toString()]);
     }
 
     $form['bandwidth_optimization'] = [
@@ -175,6 +183,14 @@ class PerformanceForm extends ConfigFormBase {
       ->save();
 
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * Clears the caches.
+   */
+  public function submitCacheClear(array &$form, FormStateInterface $form_state) {
+    drupal_flush_all_caches();
+    $this->messenger()->addStatus($this->t('Caches cleared.'));
   }
 
 }

@@ -36,10 +36,13 @@ class StateFileExistsTest extends MigrateDrupalTestBase {
    * @var array
    */
   protected $stateFileRequired = [
+    'action',
+    'aggregator',
     'ban',
     'block',
     'block_content',
     'book',
+    'color',
     'comment',
     'config_translation',
     'contact',
@@ -49,7 +52,6 @@ class StateFileExistsTest extends MigrateDrupalTestBase {
     'field',
     'file',
     'filter',
-    // @todo Remove forum in https://www.drupal.org/project/drupal/issues/3261653
     'forum',
     'image',
     'language',
@@ -63,6 +65,7 @@ class StateFileExistsTest extends MigrateDrupalTestBase {
     'node',
     'options',
     'path',
+    'rdf',
     'responsive_image',
     'search',
     'shortcut',
@@ -72,7 +75,6 @@ class StateFileExistsTest extends MigrateDrupalTestBase {
     'taxonomy',
     'telephone',
     'text',
-    // @todo Remove tracker in https://www.drupal.org/project/drupal/issues/3261452
     'tracker',
     'update',
     'user',

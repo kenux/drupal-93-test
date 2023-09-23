@@ -279,11 +279,6 @@ class Html {
 <body>!html</body>
 </html>
 EOD;
-
-    // PHP's \DOMDocument::saveXML() encodes carriage returns as &#13; so
-    // normalize all newlines to line feeds.
-    $html = str_replace(["\r\n", "\r"], "\n", $html);
-
     // PHP's \DOMDocument serialization adds extra whitespace when the markup
     // of the wrapping document contains newlines, so ensure we remove all
     // newlines before injecting the actual HTML body to be processed.
@@ -291,7 +286,7 @@ EOD;
 
     $dom = new \DOMDocument();
     // Ignore warnings during HTML soup loading.
-    @$dom->loadHTML($document, LIBXML_NOBLANKS);
+    @$dom->loadHTML($document);
 
     return $dom;
   }
@@ -350,16 +345,17 @@ EOD;
   public static function escapeCdataElement(\DOMNode $node, $comment_start = '//', $comment_end = '') {
     foreach ($node->childNodes as $child_node) {
       if ($child_node instanceof \DOMCdataSection) {
-        $data = $child_node->data;
-        if (!str_contains($child_node->data, 'CDATA')) {
-          $embed_prefix = "\n{$comment_start}<![CDATA[{$comment_end}\n";
-          $embed_suffix = "\n{$comment_start}]]>{$comment_end}\n";
+        $embed_prefix = "\n<!--{$comment_start}--><![CDATA[{$comment_start} ><!--{$comment_end}\n";
+        $embed_suffix = "\n{$comment_start}--><!]]>{$comment_end}\n";
 
-          $data = $embed_prefix . $data . $embed_suffix;
-        }
+        // Prevent invalid cdata escaping as this would throw a DOM error.
+        // This is the same behavior as found in libxml2.
+        // Related W3C standard: http://www.w3.org/TR/REC-xml/#dt-cdsection
+        // Fix explanation: http://wikipedia.org/wiki/CDATA#Nesting
+        $data = str_replace(']]>', ']]]]><![CDATA[>', $child_node->data);
 
         $fragment = $node->ownerDocument->createDocumentFragment();
-        $fragment->appendXML($data);
+        $fragment->appendXML($embed_prefix . $data . $embed_suffix);
         $node->appendChild($fragment);
         $node->removeChild($child_node);
       }
@@ -386,11 +382,7 @@ EOD;
    * @see html_entity_decode()
    * @see \Drupal\Component\Utility\Html::escape()
    */
-  public static function decodeEntities($text): string {
-    if (is_null($text)) {
-      @trigger_error('Passing NULL to ' . __METHOD__ . ' is deprecated in drupal:9.5.0 and will trigger a PHP error from drupal:11.0.0. Pass a string instead. See https://www.drupal.org/node/3318826', E_USER_DEPRECATED);
-      return '';
-    }
+  public static function decodeEntities($text) {
     return html_entity_decode($text, ENT_QUOTES, 'UTF-8');
   }
 
@@ -428,11 +420,7 @@ EOD;
    *
    * @ingroup sanitization
    */
-  public static function escape($text): string {
-    if (is_null($text)) {
-      @trigger_error('Passing NULL to ' . __METHOD__ . ' is deprecated in drupal:9.5.0 and will trigger a PHP error from drupal:11.0.0. Pass a string instead. See https://www.drupal.org/node/3318826', E_USER_DEPRECATED);
-      return '';
-    }
+  public static function escape($text) {
     return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
   }
 
@@ -452,7 +440,7 @@ EOD;
    * transformed and should generally be avoided.
    *
    * Necessary for HTML that is served outside of a website, for example, RSS
-   * and email.
+   * and e-mail.
    *
    * @param string $html
    *   The partial (X)HTML snippet to load. Invalid markup will be corrected on

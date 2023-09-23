@@ -76,7 +76,7 @@ class ResourceResponseValidator implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents(): array {
+  public static function getSubscribedEvents() {
     $events[KernelEvents::RESPONSE][] = ['onResponse'];
     return $events;
   }
@@ -101,7 +101,7 @@ class ResourceResponseValidator implements EventSubscriberInterface {
    */
   public function onResponse(ResponseEvent $event) {
     $response = $event->getResponse();
-    if (!str_contains($response->headers->get('Content-Type', ''), 'application/vnd.api+json')) {
+    if (strpos($response->headers->get('Content-Type', ''), 'application/vnd.api+json') === FALSE) {
       return;
     }
 
@@ -114,7 +114,7 @@ class ResourceResponseValidator implements EventSubscriberInterface {
    * @see self::validateResponse
    */
   public function doValidateResponse(Response $response, Request $request) {
-    assert($this->validateResponse($response, $request), 'A JSON:API response failed validation (see the logs for details). Report this in the issue queue on drupal.org');
+    assert($this->validateResponse($response, $request), 'A JSON:API response failed validation (see the logs for details). Please report this in the issue queue on drupal.org');
   }
 
   /**

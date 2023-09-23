@@ -11,7 +11,6 @@ use Drupal\Tests\BrowserTestBase;
  * Tests for private node access on /tracker.
  *
  * @group tracker
- * @group legacy
  */
 class TrackerNodeAccessTest extends BrowserTestBase {
 
@@ -34,9 +33,6 @@ class TrackerNodeAccessTest extends BrowserTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     node_access_rebuild();

@@ -24,11 +24,8 @@ class CommentNodeAccessTest extends CommentTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'stark';
+  protected $defaultTheme = 'classy';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -53,10 +50,12 @@ class CommentNodeAccessTest extends CommentTestBase {
    */
   public function testThreadedCommentView() {
     // Set comments to have subject required and preview disabled.
+    $this->drupalLogin($this->adminUser);
     $this->setCommentPreview(DRUPAL_DISABLED);
     $this->setCommentForm(TRUE);
     $this->setCommentSubject(TRUE);
     $this->setCommentSettings('default_mode', CommentManagerInterface::COMMENT_MODE_THREADED, 'Comment paging changed.');
+    $this->drupalLogout();
 
     // Post comment.
     $this->drupalLogin($this->webUser);

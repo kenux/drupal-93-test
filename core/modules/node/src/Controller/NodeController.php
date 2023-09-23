@@ -230,8 +230,8 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
             $links['revert'] = [
               'title' => $vid < $node->getRevisionId() ? $this->t('Revert') : $this->t('Set as current revision'),
               'url' => $has_translations ?
-              Url::fromRoute('node.revision_revert_translation_confirm', ['node' => $node->id(), 'node_revision' => $vid, 'langcode' => $langcode]) :
-              Url::fromRoute('node.revision_revert_confirm', ['node' => $node->id(), 'node_revision' => $vid]),
+                Url::fromRoute('node.revision_revert_translation_confirm', ['node' => $node->id(), 'node_revision' => $vid, 'langcode' => $langcode]) :
+                Url::fromRoute('node.revision_revert_confirm', ['node' => $node->id(), 'node_revision' => $vid]),
             ];
           }
 
@@ -261,7 +261,7 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
       '#attached' => [
         'library' => ['node/drupal.node.admin'],
       ],
-      '#attributes' => ['class' => ['node-revision-table']],
+      '#attributes' => ['class' => 'node-revision-table'],
     ];
 
     $build['pager'] = ['#type' => 'pager'];

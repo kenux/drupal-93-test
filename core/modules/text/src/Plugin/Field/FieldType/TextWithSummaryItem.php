@@ -5,7 +5,6 @@ namespace Drupal\text\Plugin\Field\FieldType;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\DataDefinition;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'text_with_summary' field type.
@@ -13,16 +12,10 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * @FieldType(
  *   id = "text_with_summary",
  *   label = @Translation("Text (formatted, long, with summary)"),
- *   description = {
- *     @Translation("Ideal for longer texts, like body or description with a summary"),
- *     @Translation("Allows specifying a summary for the text"),
- *     @Translation("Supports long text without specifying a maximum length"),
- *     @Translation("May use more storage and be slower for searching and sorting"),
- *   },
- *   category = "formatted_text",
+ *   description = @Translation("This field stores long text with a format and an optional summary."),
+ *   category = @Translation("Text"),
  *   default_widget = "text_textarea_with_summary",
- *   default_formatter = "text_default",
- *   list_class = "\Drupal\text\Plugin\Field\FieldType\TextFieldItemList"
+ *   default_formatter = "text_default"
  * )
  */
 class TextWithSummaryItem extends TextItemBase {
@@ -44,11 +37,11 @@ class TextWithSummaryItem extends TextItemBase {
     $properties = parent::propertyDefinitions($field_definition);
 
     $properties['summary'] = DataDefinition::create('string')
-      ->setLabel(new TranslatableMarkup('Summary'));
+      ->setLabel(t('Summary'));
 
     $properties['summary_processed'] = DataDefinition::create('string')
-      ->setLabel(new TranslatableMarkup('Processed summary'))
-      ->setDescription(new TranslatableMarkup('The summary text with the text format applied.'))
+      ->setLabel(t('Processed summary'))
+      ->setDescription(t('The summary text with the text format applied.'))
       ->setComputed(TRUE)
       ->setClass('\Drupal\text\TextProcessed')
       ->setSetting('text source', 'summary');
@@ -93,20 +86,20 @@ class TextWithSummaryItem extends TextItemBase {
    * {@inheritdoc}
    */
   public function fieldSettingsForm(array $form, FormStateInterface $form_state) {
-    $element = parent::fieldSettingsForm($form, $form_state);
+    $element = [];
     $settings = $this->getSettings();
 
     $element['display_summary'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Summary input'),
+      '#title' => t('Summary input'),
       '#default_value' => $settings['display_summary'],
-      '#description' => $this->t('This allows authors to input an explicit summary, to be displayed instead of the automatically trimmed text when using the "Summary or trimmed" display type.'),
+      '#description' => t('This allows authors to input an explicit summary, to be displayed instead of the automatically trimmed text when using the "Summary or trimmed" display type.'),
     ];
 
     $element['required_summary'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Require summary'),
-      '#description' => $this->t('The summary will also be visible when marked as required.'),
+      '#title' => t('Require summary'),
+      '#description' => t('The summary will also be visible when marked as required.'),
       '#default_value' => $settings['required_summary'],
     ];
 

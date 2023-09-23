@@ -12,7 +12,8 @@ use Drupal\comment\Entity\Comment;
 use Drupal\entity_test\Entity\EntityTest;
 
 /**
- * Tests comment cache tag bubbling up when using the Comment list formatter.
+ * Tests the bubbling up of comment cache tags when using the Comment list
+ * formatter on an entity.
  *
  * @group comment
  */
@@ -36,7 +37,7 @@ class CommentDefaultFormatterCacheTagsTest extends EntityKernelTestBase {
     // Create user 1 so that the user created later in the test has a different
     // user ID.
     // @todo Remove in https://www.drupal.org/node/540008.
-    $this->createUser([], NULL, FALSE, ['uid' => 1, 'name' => 'user1'])->save();
+    $this->createUser(['uid' => 1, 'name' => 'user1'])->save();
 
     $this->container->get('module_handler')->loadInclude('comment', 'install');
     comment_install();
@@ -55,7 +56,7 @@ class CommentDefaultFormatterCacheTagsTest extends EntityKernelTestBase {
     // user does not have access to the 'administer comments' permission, to
     // ensure only published comments are visible to the end user.
     $current_user = $this->container->get('current_user');
-    $current_user->setAccount($this->createUser(['access comments', 'post comments']));
+    $current_user->setAccount($this->createUser([], ['access comments', 'post comments']));
 
     // Install tables and config needed to render comments.
     $this->installSchema('comment', ['comment_entity_statistics']);

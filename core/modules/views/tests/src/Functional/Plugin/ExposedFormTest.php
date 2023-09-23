@@ -9,7 +9,6 @@ use Drupal\Tests\views\Functional\ViewTestBase;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Views;
 use Drupal\views\Entity\View;
-use Drupal\views\Plugin\views\filter\FilterPluginBase;
 
 /**
  * Tests exposed forms functionality.
@@ -25,7 +24,7 @@ class ExposedFormTest extends ViewTestBase {
    *
    * @var array
    */
-  public static $testViews = ['test_exposed_form_buttons', 'test_exposed_block', 'test_exposed_form_sort_items_per_page', 'test_exposed_form_pager', 'test_remember_selected'];
+  public static $testViews = ['test_exposed_form_buttons', 'test_exposed_block', 'test_exposed_form_sort_items_per_page', 'test_exposed_form_pager'];
 
   /**
    * Modules to enable.
@@ -37,7 +36,7 @@ class ExposedFormTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'starterkit_theme';
+  protected $defaultTheme = 'classy';
 
   /**
    * Nodes to test.
@@ -46,11 +45,8 @@ class ExposedFormTest extends ViewTestBase {
    */
   protected $nodes = [];
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
 
     $this->enableViewsTestModule();
 
@@ -162,37 +158,6 @@ class ExposedFormTest extends ViewTestBase {
       'page_1' => ['This identifier has illegal characters.'],
     ];
     $this->assertEquals($expected, $errors);
-
-    foreach (FilterPluginBase::RESTRICTED_IDENTIFIERS as $restricted_identifier) {
-      $view = Views::getView('test_exposed_form_buttons');
-      $view->setDisplay();
-      $view->displayHandlers->get('default')->overrideOption('filters', [
-        'type' => [
-          'exposed' => TRUE,
-          'field' => 'type',
-          'id' => 'type',
-          'table' => 'node_field_data',
-          'plugin_id' => 'in_operator',
-          'entity_type' => 'node',
-          'entity_field' => 'type',
-          'expose' => [
-            'identifier' => $restricted_identifier,
-            'label' => 'Content: Type',
-            'operator_id' => 'type_op',
-            'reduce' => FALSE,
-            'description' => 'Exposed overridden description',
-          ],
-        ],
-      ]);
-      $this->executeView($view);
-
-      $errors = $view->validate();
-      $expected = [
-        'default' => ['This identifier is not allowed.'],
-        'page_1' => ['This identifier is not allowed.'],
-      ];
-      $this->assertEquals($expected, $errors);
-    }
   }
 
   /**
@@ -266,7 +231,7 @@ class ExposedFormTest extends ViewTestBase {
     $block->getPlugin()->setConfigurationValue('views_label', '<strong>Custom</strong> title<script>alert("hacked!");</script>');
     $block->save();
 
-    // Test that the content block label is found.
+    // Test that the custom block label is found.
     $this->drupalGet('test_exposed_block');
     $this->assertSession()->responseContains('<strong>Custom</strong> titlealert("hacked!");');
 
@@ -283,7 +248,9 @@ class ExposedFormTest extends ViewTestBase {
     $this->assertSession()->pageTextMatchesCount(1, '/' . $view->getTitle() . '/');
 
     // Test there is an exposed form in a block.
-    $this->assertSession()->elementsCount('xpath', '//div[@id="' . Html::getUniqueId('block-' . $block->id()) . '"]/form/@id', 1);
+    $xpath = $this->assertSession()->buildXPathQuery('//div[@id=:id]/form/@id', [':id' => Html::getUniqueId('block-' . $block->id())]);
+    $result = $this->xpath($xpath);
+    $this->assertCount(1, $result);
 
     // Test there is not an exposed form in the view page content area.
     $xpath = $this->assertSession()->buildXPathQuery('//div[@class="view-content"]/form/@id', [
@@ -292,9 +259,8 @@ class ExposedFormTest extends ViewTestBase {
     $this->assertSession()->elementNotExists('xpath', $xpath);
 
     // Test there is only one views exposed form on the page.
-    $xpath = '//form[@id="' . $this->getExpectedExposedFormId($view) . '"]';
-    $this->assertSession()->elementsCount('xpath', $xpath, 1);
-    $element = $this->assertSession()->elementExists('xpath', $xpath);
+    $elements = $this->xpath('//form[@id=:id]', [':id' => $this->getExpectedExposedFormId($view)]);
+    $this->assertCount(1, $elements, 'One exposed form block found.');
 
     // Test that the correct option is selected after form submission.
     $this->assertCacheContext('url');
@@ -305,13 +271,13 @@ class ExposedFormTest extends ViewTestBase {
       'page' => ['page'],
     ];
     foreach ($arguments as $argument => $bundles) {
-      $element->find('css', 'select')->selectOption($argument);
-      $element->findButton('Apply')->click();
+      $elements[0]->find('css', 'select')->selectOption($argument);
+      $elements[0]->findButton('Apply')->click();
       $this->assertCacheContext('url');
       $this->assertTrue($this->assertSession()->optionExists('Content: Type', $argument)->isSelected());
       $this->assertNodesExist($bundles);
     }
-    $element->findButton('Reset')->click();
+    $elements[0]->findButton('Reset')->click();
     $this->assertNodesExist($arguments['All']);
   }
 
@@ -540,19 +506,6 @@ class ExposedFormTest extends ViewTestBase {
         $this->assertSession()->pageTextNotContains($node->label());
       }
     }
-  }
-
-  /**
-   * Tests the "Remember the last selection" functionality.
-   */
-  public function testRememberSelected() {
-    $this->drupalGet('test_remember_selected');
-    $this->getSession()->getPage()->fillField('type', 'page');
-    $this->getSession()->getPage()->pressButton('Apply');
-
-    // Reload the page and ensure the filter is selected.
-    $this->drupalGet('test_remember_selected');
-    $this->assertTrue($this->assertSession()->optionExists('type', 'page')->isSelected());
   }
 
 }

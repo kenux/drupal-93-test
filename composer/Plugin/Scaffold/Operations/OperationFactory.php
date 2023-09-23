@@ -44,7 +44,7 @@ class OperationFactory {
    *   The scaffolding operation object (skip, replace, etc.)
    *
    * @throws \RuntimeException
-   *   Exception thrown when parameter data does not identify a known scaffold
+   *   Exception thrown when parameter data does not identify a known scaffol
    *   operation.
    */
   public function create(PackageInterface $package, OperationData $operation_data) {
@@ -122,7 +122,7 @@ class OperationFactory {
   /**
    * Checks to see if the specified scaffold file exists and has content.
    *
-   * @param \Drupal\Composer\Plugin\Scaffold\ScaffoldFilePath $file
+   * @param Drupal\Composer\Plugin\Scaffold\ScaffoldFilePath $file
    *   Scaffold file to check.
    *
    * @return bool

@@ -18,13 +18,7 @@ class SearchAdminThemeTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = [
-    'help',
-    'node',
-    'search',
-    'search_extra_type',
-    'user',
-  ];
+  protected static $modules = ['node', 'search', 'search_extra_type', 'user'];
 
   /**
    * {@inheritdoc}
@@ -36,7 +30,7 @@ class SearchAdminThemeTest extends BrowserTestBase {
    *
    * @var string
    */
-  protected $adminTheme = 'claro';
+  protected $adminTheme = 'seven';
 
   /**
    * {@inheritdoc}
@@ -54,7 +48,6 @@ class SearchAdminThemeTest extends BrowserTestBase {
     $user = $this->drupalCreateUser([
       'access content',
       'search content',
-      'access help pages',
       'access user profiles',
       'view the administration theme',
     ]);
@@ -77,7 +70,6 @@ class SearchAdminThemeTest extends BrowserTestBase {
     $page_ids = [
       'node_search' => FALSE,
       'dummy_search_type' => TRUE,
-      'help_search' => TRUE,
       'user_search' => FALSE,
     ];
     foreach ($page_ids as $page_id => $use_admin_theme) {

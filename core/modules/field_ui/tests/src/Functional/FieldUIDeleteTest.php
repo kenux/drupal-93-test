@@ -52,7 +52,6 @@ class FieldUIDeleteTest extends BrowserTestBase {
     $this->drupalPlaceBlock('system_breadcrumb_block');
     $this->drupalPlaceBlock('local_tasks_block');
     $this->drupalPlaceBlock('page_title_block');
-    $this->drupalPlaceBlock('local_actions_block');
 
     // Create a test user.
     $admin_user = $this->drupalCreateUser([
@@ -78,7 +77,7 @@ class FieldUIDeleteTest extends BrowserTestBase {
     $field_name = 'field_test';
 
     // Create an additional node type.
-    $type_name1 = $this->randomMachineName(8) . '_test';
+    $type_name1 = strtolower($this->randomMachineName(8)) . '_test';
     $type1 = $this->drupalCreateContentType(['name' => $type_name1, 'type' => $type_name1]);
     $type_name1 = $type1->id();
 
@@ -87,7 +86,7 @@ class FieldUIDeleteTest extends BrowserTestBase {
     $this->fieldUIAddNewField($bundle_path1, $field_name_input, $field_label);
 
     // Create an additional node type.
-    $type_name2 = $this->randomMachineName(8) . '_test';
+    $type_name2 = strtolower($this->randomMachineName(8)) . '_test';
     $type2 = $this->drupalCreateContentType(['name' => $type_name2, 'type' => $type_name2]);
     $type_name2 = $type2->id();
 
@@ -117,7 +116,7 @@ class FieldUIDeleteTest extends BrowserTestBase {
 
     // Check that the field was deleted.
     $this->assertNull(FieldConfig::loadByName('node', $type_name1, $field_name), 'Field was deleted.');
-    // Check that the field storage was not deleted.
+    // Check that the field storage was not deleted
     $this->assertNotNull(FieldStorageConfig::loadByName('node', $field_name), 'Field storage was not deleted.');
 
     // Check the config dependencies of the first field.
@@ -125,8 +124,9 @@ class FieldUIDeleteTest extends BrowserTestBase {
     $this->assertSession()->pageTextContains('The listed configuration will be updated.');
     $this->assertSession()->elementTextEquals('xpath', '//ul[@data-drupal-selector="edit-view"]', 'test_view_field_delete');
 
+    $xml = $this->cssSelect('#edit-entity-deletes');
     // Test that nothing is scheduled for deletion.
-    $this->assertSession()->elementNotExists('css', '#edit-entity-deletes');
+    $this->assertFalse(isset($xml[0]), 'The field currently being deleted is not shown in the entity deletions.');
 
     // Delete the second field.
     $this->fieldUIDeleteField($bundle_path2, "node.$type_name2.$field_name", $field_label, $type_name2);

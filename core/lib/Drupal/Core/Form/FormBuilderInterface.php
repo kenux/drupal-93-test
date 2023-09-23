@@ -46,25 +46,20 @@ interface FormBuilderInterface {
    *   The value must be one of the following:
    *   - The name of a class that implements \Drupal\Core\Form\FormInterface.
    *   - An instance of a class that implements \Drupal\Core\Form\FormInterface.
-   * phpcs:disable Drupal.Commenting
-   * @todo Uncomment new method parameters before drupal:11.0.0.
-   * @see https://www.drupal.org/project/drupal/issues/3354672
-   *
-   * @param mixed ...$args
+   * @param ...
    *   Any additional arguments are passed on to the functions called by
    *   \Drupal::formBuilder()->getForm(), including the unique form constructor
    *   function. For example, the node_edit form requires that a node object is
    *   passed in here when it is called. These are available to implementations
    *   of hook_form_alter() and hook_form_FORM_ID_alter() as the array
    *   $form_state->getBuildInfo()['args'].
-   * phpcs:enable
    *
    * @return array
    *   The form array.
    *
    * @see \Drupal\Core\Form\FormBuilderInterface::buildForm()
    */
-  public function getForm($form_arg /* , mixed ...$args */);
+  public function getForm($form_arg);
 
   /**
    * Builds and processes a form for a given form ID.
@@ -143,11 +138,15 @@ interface FormBuilderInterface {
    *
    * For example:
    * @code
-   * // Set the administrator role to 'content_editor'.
-   * $values['user_admin_role'] = 'content_editor';
+   * // register a new user
    * $form_state = new FormState();
+   * $values['name'] = 'robo-user';
+   * $values['mail'] = 'robouser@example.com';
+   * $values['pass']['pass1'] = 'password';
+   * $values['pass']['pass2'] = 'password';
+   * $values['op'] = t('Create new account');
    * $form_state->setValues($values);
-   * \Drupal::formBuilder()->submitForm(RoleSettingsForm::class, $form_state);
+   * \Drupal::formBuilder()->submitForm('user_register_form', $form_state);
    * @endcode
    *
    * @param \Drupal\Core\Form\FormInterface|string $form_arg
@@ -163,11 +162,7 @@ interface FormBuilderInterface {
    *   checkbox or other control that browsers submit by not having a
    *   \Drupal::request()->request entry, include the key, but set the value to
    *   NULL.
-   * phpcs:disable Drupal.Commenting
-   * @todo Uncomment new method parameters before drupal:11.0.0.
-   * @see https://www.drupal.org/project/drupal/issues/3354672
-   *
-   * @param mixed ...$args
+   * @param ...
    *   Any additional arguments are passed on to the functions called by
    *   self::submitForm(), including the unique form constructor function.
    *   For example, the node_edit form requires that a node object be passed
@@ -185,9 +180,8 @@ interface FormBuilderInterface {
    *   $form_state->addBuildInfo('args', [&$object]);
    *   \Drupal::formBuilder()->submitForm('mymodule_form', $form_state);
    *   @endcode
-   * phpcs:enable
    */
-  public function submitForm($form_arg, FormStateInterface &$form_state /* , mixed ...$args */);
+  public function submitForm($form_arg, FormStateInterface &$form_state);
 
   /**
    * Retrieves the structured array that defines a given form.

@@ -6,6 +6,7 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Config\ConfigImporter;
 use Drupal\Core\Config\ConfigImporterException;
+use Drupal\Core\Config\StorageComparer;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
@@ -21,15 +22,19 @@ class ConfigImporterTest extends KernelTestBase {
   const FAIL_MESSAGE = 'There were errors validating the config synchronization.';
 
   /**
+   * Config Importer object used for testing.
+   *
+   * @var \Drupal\Core\Config\ConfigImporter
+   */
+  protected $configImporter;
+
+  /**
    * Modules to enable.
    *
    * @var array
    */
   protected static $modules = ['config_test', 'system', 'config_import_test'];
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -40,6 +45,24 @@ class ConfigImporterTest extends KernelTestBase {
     unset($GLOBALS['hook_config_test']);
 
     $this->copyConfig($this->container->get('config.storage'), $this->container->get('config.storage.sync'));
+
+    // Set up the ConfigImporter object for testing.
+    $storage_comparer = new StorageComparer(
+      $this->container->get('config.storage.sync'),
+      $this->container->get('config.storage')
+    );
+    $this->configImporter = new ConfigImporter(
+      $storage_comparer->createChangelist(),
+      $this->container->get('event_dispatcher'),
+      $this->container->get('config.manager'),
+      $this->container->get('lock'),
+      $this->container->get('config.typed'),
+      $this->container->get('module_handler'),
+      $this->container->get('module_installer'),
+      $this->container->get('theme_handler'),
+      $this->container->get('string_translation'),
+      $this->container->get('extension.list.module')
+    );
   }
 
   /**
@@ -57,12 +80,13 @@ class ConfigImporterTest extends KernelTestBase {
   }
 
   /**
-   * Tests that trying to import from empty sync configuration directory fails.
+   * Tests that trying to import from an empty sync configuration directory
+   * fails.
    */
   public function testEmptyImportFails() {
     $this->expectException(ConfigImporterException::class);
     $this->container->get('config.storage.sync')->deleteAll();
-    $this->configImporter()->import();
+    $this->configImporter->reset()->import();
   }
 
   /**
@@ -75,15 +99,14 @@ class ConfigImporterTest extends KernelTestBase {
     // Generate a new site UUID.
     $config_data['uuid'] = \Drupal::service('uuid')->generate();
     $sync->write('system.site', $config_data);
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown, invalid import was not stopped due to mis-matching site UUID.');
     }
     catch (ConfigImporterException $e) {
       $actual_message = $e->getMessage();
 
-      $actual_error_log = $config_importer->getErrors();
+      $actual_error_log = $this->configImporter->getErrors();
       $expected_error_log = ['Site UUID in source storage does not match the target storage.'];
       $this->assertEquals($expected_error_log, $actual_error_log);
 
@@ -111,8 +134,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync->delete($dynamic_name);
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     // Verify the file has been removed.
     $this->assertFalse($storage->read($dynamic_name));
@@ -128,8 +150,8 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertTrue(isset($GLOBALS['hook_config_test']['predelete']));
     $this->assertTrue(isset($GLOBALS['hook_config_test']['delete']));
 
-    $this->assertFalse($config_importer->hasUnprocessedConfigurationChanges());
-    $logs = $config_importer->getErrors();
+    $this->assertFalse($this->configImporter->hasUnprocessedConfigurationChanges());
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(0, $logs);
   }
 
@@ -163,8 +185,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertTrue($sync->exists($dynamic_name), $dynamic_name . ' found.');
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     // Verify the values appeared.
     $config = $this->config($dynamic_name);
@@ -183,8 +204,8 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertTrue(isset($GLOBALS['hook_config_test']['config_import_steps_alter']));
 
     // Verify that there is nothing more to import.
-    $this->assertFalse($config_importer->hasUnprocessedConfigurationChanges());
-    $logs = $config_importer->getErrors();
+    $this->assertFalse($this->configImporter->hasUnprocessedConfigurationChanges());
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(0, $logs);
   }
 
@@ -217,8 +238,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync->write($name_secondary, $values_secondary);
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     $entity_storage = \Drupal::entityTypeManager()->getStorage('config_test');
     $primary = $entity_storage->load('primary');
@@ -230,7 +250,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertEquals($values_secondary['uuid'], $secondary->uuid());
     $this->assertEquals($values_secondary['label'], $secondary->label());
 
-    $logs = $config_importer->getErrors();
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(1, $logs);
     $this->assertEquals(new FormattableMarkup('Deleted and replaced configuration entity "@name"', ['@name' => $name_secondary]), $logs[0]);
   }
@@ -264,8 +284,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync->write($name_secondary, $values_secondary);
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     $entity_storage = \Drupal::entityTypeManager()->getStorage('config_test');
     $primary = $entity_storage->load('primary');
@@ -277,7 +296,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertEquals($values_secondary['uuid'], $secondary->uuid());
     $this->assertEquals($values_secondary['label'], $secondary->label());
 
-    $logs = $config_importer->getErrors();
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(1, $logs);
     $this->assertEquals(Html::escape("Unexpected error during import with operation create for {$name_primary}: 'config_test' entity with ID 'secondary' already exists."), $logs[0]);
   }
@@ -333,8 +352,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync->write($name_other, $values_other);
 
     // Check update changelist order.
-    $config_importer = $this->configImporter();
-    $updates = $config_importer->getStorageComparer()->getChangelist('update');
+    $updates = $this->configImporter->reset()->getStorageComparer()->getChangelist('update');
     $expected = [
       $name_deleter,
       $name_deletee,
@@ -343,7 +361,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertSame($expected, $updates);
 
     // Import.
-    $config_importer->import();
+    $this->configImporter->import();
 
     $entity_storage = \Drupal::entityTypeManager()->getStorage('config_test');
     $deleter = $entity_storage->load('deleter');
@@ -360,7 +378,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertEquals($values_other['uuid'], $other->uuid());
     $this->assertEquals($values_other['label'], $other->label());
 
-    $logs = $config_importer->getErrors();
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(1, $logs);
     $this->assertEquals(new FormattableMarkup('Update target "@name" is missing.', ['@name' => $name_deletee]), $logs[0]);
   }
@@ -403,8 +421,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync->write($name_deletee, $values_deletee);
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     $entity_storage = \Drupal::entityTypeManager()->getStorage('config_test');
     // Both entities are deleted. ConfigTest::postSave() causes updates of the
@@ -412,7 +429,7 @@ class ConfigImporterTest extends KernelTestBase {
     // the deletee, removing the deletee causes the deleter to be removed.
     $this->assertNull($entity_storage->load('deleter'));
     $this->assertNull($entity_storage->load('deletee'));
-    $logs = $config_importer->getErrors();
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(0, $logs);
   }
 
@@ -446,8 +463,7 @@ class ConfigImporterTest extends KernelTestBase {
     $storage->write($name_deletee, $values_deletee);
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     $entity_storage = \Drupal::entityTypeManager()->getStorage('config_test');
     $this->assertNull($entity_storage->load('deleter'));
@@ -455,7 +471,7 @@ class ConfigImporterTest extends KernelTestBase {
     // The deletee entity does not exist as the delete worked and although the
     // delete occurred in \Drupal\config_test\Entity\ConfigTest::postDelete()
     // this does not matter.
-    $logs = $config_importer->getErrors();
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(0, $logs);
   }
 
@@ -489,8 +505,7 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertSame('Default', $config->get('label'));
 
     // Import.
-    $config_importer = $this->configImporter();
-    $config_importer->import();
+    $this->configImporter->reset()->import();
 
     // Verify the values were updated.
     \Drupal::configFactory()->reset($name);
@@ -512,8 +527,8 @@ class ConfigImporterTest extends KernelTestBase {
     $this->assertFalse(isset($GLOBALS['hook_config_test']['delete']));
 
     // Verify that there is nothing more to import.
-    $this->assertFalse($config_importer->hasUnprocessedConfigurationChanges());
-    $logs = $config_importer->getErrors();
+    $this->assertFalse($this->configImporter->hasUnprocessedConfigurationChanges());
+    $logs = $this->configImporter->getErrors();
     $this->assertCount(0, $logs);
   }
 
@@ -567,9 +582,8 @@ class ConfigImporterTest extends KernelTestBase {
     $extensions['theme']['test_subtheme'] = 0;
 
     $sync->write('core.extension', $extensions);
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown; an invalid import was not stopped due to missing dependencies.');
     }
     catch (ConfigImporterException $e) {
@@ -586,7 +600,7 @@ class ConfigImporterTest extends KernelTestBase {
         'Configuration <em class="placeholder">unknown.config</em> depends on the <em class="placeholder">unknown</em> extension that will not be installed after import.',
       ];
       $this->assertEquals(implode(PHP_EOL, $expected), $e->getMessage());
-      $error_log = $config_importer->getErrors();
+      $error_log = $this->configImporter->getErrors();
       $expected = [
         'Unable to install the <em class="placeholder">unknown_module</em> module since it does not exist.',
         'Unable to install the <em class="placeholder">Book</em> module since it requires the <em class="placeholder">Node, Text, Field, Filter, User</em> modules.',
@@ -606,13 +620,12 @@ class ConfigImporterTest extends KernelTestBase {
     $config_entity_data = $sync->read('config_test.dynamic.dotted.default');
     $config_entity_data['dependencies'] = ['module' => ['unknown', 'dblog']];
     $sync->write('config_test.dynamic.dotted.module', $config_entity_data);
-    $config_entity_data['dependencies'] = ['theme' => ['unknown', 'stark']];
+    $config_entity_data['dependencies'] = ['theme' => ['unknown', 'seven']];
     $sync->write('config_test.dynamic.dotted.theme', $config_entity_data);
     $config_entity_data['dependencies'] = ['config' => ['unknown', 'unknown2']];
     $sync->write('config_test.dynamic.dotted.config', $config_entity_data);
-    $config_importer = $this->configImporter();
     try {
-      $this->configImporter->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown, invalid import was not stopped due to missing dependencies.');
     }
     catch (ConfigImporterException $e) {
@@ -622,18 +635,27 @@ class ConfigImporterTest extends KernelTestBase {
         'Unable to install the <em class="placeholder">Book</em> module since it requires the <em class="placeholder">Node, Text, Field, Filter, User</em> modules.',
         'Unable to install the <em class="placeholder">unknown_theme</em> theme since it does not exist.',
         'Unable to install the <em class="placeholder">Theme test subtheme</em> theme since it requires the <em class="placeholder">Theme test base theme</em> theme.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.config</em> depends on the <em class="placeholder">unknown</em> configuration that will not exist after import.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.existing</em> depends on the <em class="placeholder">config_test.dynamic.dotted.deleted</em> configuration that will not exist after import.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.module</em> depends on the <em class="placeholder">unknown</em> module that will not be installed after import.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.theme</em> depends on the <em class="placeholder">unknown</em> theme that will not be installed after import.',
+        'Configuration <em class="placeholder">unknown.config</em> depends on the <em class="placeholder">unknown</em> extension that will not be installed after import.',
+        'Unable to install the <em class="placeholder">unknown_module</em> module since it does not exist.',
+        'Unable to install the <em class="placeholder">Book</em> module since it requires the <em class="placeholder">Node, Text, Field, Filter, User</em> modules.',
+        'Unable to install the <em class="placeholder">unknown_theme</em> theme since it does not exist.',
+        'Unable to install the <em class="placeholder">Theme test subtheme</em> theme since it requires the <em class="placeholder">Theme test base theme</em> theme.',
         'Configuration <em class="placeholder">config_test.dynamic.dotted.config</em> depends on configuration (<em class="placeholder">unknown, unknown2</em>) that will not exist after import.',
         'Configuration <em class="placeholder">config_test.dynamic.dotted.existing</em> depends on the <em class="placeholder">config_test.dynamic.dotted.deleted</em> configuration that will not exist after import.',
         'Configuration <em class="placeholder">config_test.dynamic.dotted.module</em> depends on modules (<em class="placeholder">unknown, Database Logging</em>) that will not be installed after import.',
-        'Configuration <em class="placeholder">config_test.dynamic.dotted.theme</em> depends on themes (<em class="placeholder">unknown, Stark</em>) that will not be installed after import.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.theme</em> depends on themes (<em class="placeholder">unknown, Seven</em>) that will not be installed after import.',
         'Configuration <em class="placeholder">unknown.config</em> depends on the <em class="placeholder">unknown</em> extension that will not be installed after import.',
       ];
       $this->assertEquals(implode(PHP_EOL, $expected), $e->getMessage());
-      $error_log = $config_importer->getErrors();
+      $error_log = $this->configImporter->getErrors();
       $expected = [
         'Configuration <em class="placeholder">config_test.dynamic.dotted.config</em> depends on configuration (<em class="placeholder">unknown, unknown2</em>) that will not exist after import.',
         'Configuration <em class="placeholder">config_test.dynamic.dotted.module</em> depends on modules (<em class="placeholder">unknown, Database Logging</em>) that will not be installed after import.',
-        'Configuration <em class="placeholder">config_test.dynamic.dotted.theme</em> depends on themes (<em class="placeholder">unknown, Stark</em>) that will not be installed after import.',
+        'Configuration <em class="placeholder">config_test.dynamic.dotted.theme</em> depends on themes (<em class="placeholder">unknown, Seven</em>) that will not be installed after import.',
       ];
       foreach ($expected as $expected_message) {
         $this->assertContainsEquals($expected_message, $error_log, $expected_message);
@@ -649,72 +671,16 @@ class ConfigImporterTest extends KernelTestBase {
   public function testMissingCoreExtension() {
     $sync = $this->container->get('config.storage.sync');
     $sync->delete('core.extension');
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown, invalid import was not stopped due to missing dependencies.');
     }
     catch (ConfigImporterException $e) {
       $expected = static::FAIL_MESSAGE . PHP_EOL . 'The core.extension configuration does not exist.';
       $this->assertEquals($expected, $e->getMessage());
-      $error_log = $config_importer->getErrors();
+      $error_log = $this->configImporter->getErrors();
       $this->assertEquals(['The core.extension configuration does not exist.'], $error_log);
     }
-  }
-
-  /**
-   * Tests uninstall validators being called during synchronization.
-   *
-   * @see \Drupal\Core\EventSubscriber\ConfigImportSubscriber
-   */
-  public function testRequiredModuleValidation() {
-    $sync = $this->container->get('config.storage.sync');
-
-    $extensions = $sync->read('core.extension');
-    unset($extensions['module']['system']);
-    $sync->write('core.extension', $extensions);
-
-    $config_importer = $this->configImporter();
-    try {
-      $config_importer->import();
-      $this->fail('ConfigImporterException not thrown, invalid import was not stopped due to missing dependencies.');
-    }
-    catch (ConfigImporterException $e) {
-      $this->assertStringContainsString('There were errors validating the config synchronization.', $e->getMessage());
-      $error_log = $config_importer->getErrors();
-      $this->assertEquals('Unable to uninstall the System module because: The System module is required.', $error_log[0]);
-    }
-  }
-
-  /**
-   * Tests installing a base themes and sub themes during configuration import.
-   *
-   * @see \Drupal\Core\EventSubscriber\ConfigImportSubscriber
-   */
-  public function testInstallBaseAndSubThemes() {
-    $sync = $this->container->get('config.storage.sync');
-    $extensions = $sync->read('core.extension');
-    $extensions['theme']['test_basetheme'] = 0;
-    $extensions['theme']['test_subtheme'] = 0;
-    $extensions['theme']['test_subsubtheme'] = 0;
-    $sync->write('core.extension', $extensions);
-    $config_importer = $this->configImporter();
-    $config_importer->import();
-    $this->assertTrue($this->container->get('theme_handler')->themeExists('test_basetheme'));
-    $this->assertTrue($this->container->get('theme_handler')->themeExists('test_subsubtheme'));
-    $this->assertTrue($this->container->get('theme_handler')->themeExists('test_subtheme'));
-
-    // Test uninstalling them.
-    $extensions = $sync->read('core.extension');
-    unset($extensions['theme']['test_basetheme']);
-    unset($extensions['theme']['test_subsubtheme']);
-    unset($extensions['theme']['test_subtheme']);
-    $sync->write('core.extension', $extensions);
-    $config_importer = $this->configImporter();
-    $config_importer->import();
-    $this->assertFalse($this->container->get('theme_handler')->themeExists('test_basetheme'));
-    $this->assertFalse($this->container->get('theme_handler')->themeExists('test_subsubtheme'));
-    $this->assertFalse($this->container->get('theme_handler')->themeExists('test_subtheme'));
   }
 
   /**
@@ -730,17 +696,16 @@ class ConfigImporterTest extends KernelTestBase {
     $extensions['module']['standard'] = 0;
 
     $sync->write('core.extension', $extensions);
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown; an invalid import was not stopped due to missing dependencies.');
     }
     catch (ConfigImporterException $e) {
       $expected = static::FAIL_MESSAGE . PHP_EOL . 'Unable to install the <em class="placeholder">standard</em> module since it does not exist.';
       $this->assertEquals($expected, $e->getMessage(), 'There were errors validating the config synchronization.');
-      $error_log = $config_importer->getErrors();
+      $error_log = $this->configImporter->getErrors();
       // Install profiles should not even be scanned at this point.
-      $this->assertEquals(['Unable to install the standard module since it does not exist.'], $error_log);
+      $this->assertEquals(['Unable to install the <em class="placeholder">standard</em> module since it does not exist.'], $error_log);
     }
   }
 
@@ -757,20 +722,19 @@ class ConfigImporterTest extends KernelTestBase {
     $extensions['profile'] = 'this_will_not_work';
     $sync->write('core.extension', $extensions);
 
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->import();
+      $this->configImporter->reset()->import();
       $this->fail('ConfigImporterException not thrown; an invalid import was not stopped due to missing dependencies.');
     }
     catch (ConfigImporterException $e) {
       $expected = static::FAIL_MESSAGE . PHP_EOL . 'Cannot change the install profile from <em class="placeholder"></em> to <em class="placeholder">this_will_not_work</em> once Drupal is installed.';
       $this->assertEquals($expected, $e->getMessage(), 'There were errors validating the config synchronization.');
-      $error_log = $config_importer->getErrors();
+      $error_log = $this->configImporter->getErrors();
       // Install profiles can not be changed. Note that KernelTestBase currently
       // does not use an install profile. This situation should be impossible
       // to get in but site's can removed the install profile setting from
       // settings.php so the test is valid.
-      $this->assertEquals(['Cannot change the install profile from  to this_will_not_work once Drupal is installed.'], $error_log);
+      $this->assertEquals(['Cannot change the install profile from <em class="placeholder"></em> to <em class="placeholder">this_will_not_work</em> once Drupal is installed.'], $error_log);
     }
   }
 
@@ -788,7 +752,7 @@ class ConfigImporterTest extends KernelTestBase {
     // Delete the config so that create hooks will fire.
     $storage->delete($dynamic_name);
     \Drupal::state()->set('config_test.store_isSyncing', []);
-    $this->configImporter()->import();
+    $this->configImporter->reset()->import();
 
     // The values of the syncing values should be stored in state by
     // config_test_config_test_create().
@@ -804,7 +768,7 @@ class ConfigImporterTest extends KernelTestBase {
     $config = $this->config($dynamic_name);
     $config->set('label', 'A new name')->save();
     \Drupal::state()->set('config_test.store_isSyncing', []);
-    $this->configImporter()->import();
+    $this->configImporter->reset()->import();
 
     // The values of the syncing values should be stored in state by
     // config_test_config_test_create().
@@ -818,7 +782,7 @@ class ConfigImporterTest extends KernelTestBase {
     $sync = $this->container->get('config.storage.sync');
     $sync->delete($dynamic_name);
     \Drupal::state()->set('config_test.store_isSyncing', []);
-    $this->configImporter()->import();
+    $this->configImporter->reset()->import();
 
     // The values of the syncing values should be stored in state by
     // config_test_config_test_create().
@@ -835,9 +799,8 @@ class ConfigImporterTest extends KernelTestBase {
   public function testInvalidStep() {
     $this->assertFalse(\Drupal::isConfigSyncing(), 'Before an import \Drupal::isConfigSyncing() returns FALSE');
     $context = [];
-    $config_importer = $this->configImporter();
     try {
-      $config_importer->doSyncStep('a_non_existent_step', $context);
+      $this->configImporter->doSyncStep('a_non_existent_step', $context);
       $this->fail('Expected \InvalidArgumentException thrown');
     }
     catch (\InvalidArgumentException $e) {
@@ -852,51 +815,9 @@ class ConfigImporterTest extends KernelTestBase {
   public function testCustomStep() {
     $this->assertFalse(\Drupal::isConfigSyncing(), 'Before an import \Drupal::isConfigSyncing() returns FALSE');
     $context = [];
-    $this->configImporter()->doSyncStep(self::customStep(...), $context);
+    $this->configImporter->doSyncStep([self::class, 'customStep'], $context);
     $this->assertTrue($context['is_syncing'], 'Inside a custom step \Drupal::isConfigSyncing() returns TRUE');
     $this->assertFalse(\Drupal::isConfigSyncing(), 'After an valid custom step \Drupal::isConfigSyncing() returns FALSE');
-  }
-
-  /**
-   * Tests that uninstall a theme in config import correctly imports all config.
-   */
-  public function testUninstallThemeIncrementsCount(): void {
-    $theme_installer = $this->container->get('theme_installer');
-    // Install our theme.
-    $theme = 'test_basetheme';
-    $theme_installer->install([$theme]);
-
-    $this->assertTrue($this->container->get('theme_handler')->themeExists($theme));
-
-    $sync = $this->container->get('config.storage.sync');
-
-    // Update 2 pieces of config in sync.
-    $systemSiteName = 'system.site';
-    $system = $sync->read($systemSiteName);
-    $system['name'] = 'Foo';
-    $sync->write($systemSiteName, $system);
-
-    $cronName = 'system.cron';
-    $cron = $sync->read($cronName);
-    $this->assertEquals(1, $cron['logging']);
-    $cron['logging'] = 0;
-    $sync->write($cronName, $cron);
-
-    // Uninstall the theme in sync.
-    $extensions = $sync->read('core.extension');
-    unset($extensions['theme'][$theme]);
-    $sync->write('core.extension', $extensions);
-
-    $this->configImporter()->import();
-
-    // The theme should be uninstalled.
-    $this->assertFalse($this->container->get('theme_handler')->themeExists($theme));
-
-    // Both pieces of config should be updated.
-    \Drupal::configFactory()->reset($systemSiteName);
-    \Drupal::configFactory()->reset($cronName);
-    $this->assertEquals('Foo', $this->config($systemSiteName)->get('name'));
-    $this->assertEquals(0, $this->config($cronName)->get('logging'));
   }
 
   /**

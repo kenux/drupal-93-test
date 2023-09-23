@@ -244,7 +244,6 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
    *   - #ajax['event']
    *   - #ajax['prevent']
    *   - #ajax['url']
-   *   - #ajax['httpMethod']
    *   - #ajax['callback']
    *   - #ajax['options']
    *   - #ajax['wrapper']
@@ -327,7 +326,7 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
 
     // Attach JavaScript settings to the element.
     if (isset($element['#ajax']['event'])) {
-      $element['#attached']['library'][] = 'core/internal.jquery.form';
+      $element['#attached']['library'][] = 'core/jquery.form';
       $element['#attached']['library'][] = 'core/drupal.ajax';
 
       $settings = $element['#ajax'];
@@ -341,7 +340,6 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
       // to be substantially different for a JavaScript triggered submission.
       $settings += [
         'url' => NULL,
-        'httpMethod' => 'POST',
         'options' => ['query' => []],
         'dialogType' => 'ajax',
       ];

@@ -22,7 +22,7 @@ abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
   /**
    * The created entity.
    *
-   * @var \Drupal\Core\Entity\EntityInterface
+   * @var \Drupal\Core\Entity\Entity
    */
   protected $entity;
 
@@ -33,22 +33,7 @@ abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
    */
   protected $fieldStorage;
 
-  /**
-   * @var int
-   */
-  protected int $field;
-
-  /**
-   * Test data.
-   *
-   * @var array
-   */
-  protected array $test;
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
+  protected function setUp() {
     parent::setUp();
 
     $field_name = 'test_options';

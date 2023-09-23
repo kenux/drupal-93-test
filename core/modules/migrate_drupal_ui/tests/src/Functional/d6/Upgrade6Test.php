@@ -18,10 +18,12 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
+    'aggregator',
     'book',
     'config_translation',
     'content_translation',
     'datetime_range',
+    'forum',
     'language',
     'migrate_drupal_ui',
     'statistics',
@@ -41,7 +43,7 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
-    // @todo remove in https://www.drupal.org/project/drupal/issues/3267040
+
     // Delete the existing content made to test the ID Conflict form. Migrations
     // are to be done on a site without content. The test of the ID Conflict
     // form is being moved to its own issue which will remove the deletion
@@ -66,7 +68,9 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
    */
   protected function getEntityCounts() {
     return [
-      'block' => 37,
+      'aggregator_item' => 1,
+      'aggregator_feed' => 2,
+      'block' => 34,
       'block_content' => 2,
       'block_content_type' => 1,
       'comment' => 8,
@@ -87,24 +91,26 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
       // The 'book' module provides the 'book' node type, and the migration
       // creates 12 node types.
       'node_type' => 14,
-      'search_page' => 3,
+      'rdf_mapping' => 7,
+      'search_page' => 2,
       'shortcut' => 2,
       'shortcut_set' => 1,
-      'action' => 33,
+      'action' => 27,
       'menu' => 8,
       'path_alias' => 8,
       'taxonomy_term' => 15,
       'taxonomy_vocabulary' => 7,
+      'tour' => 6,
       'user' => 7,
       'user_role' => 7,
       'menu_link_content' => 10,
-      'view' => 14,
-      'date_format' => 12,
-      'entity_form_display' => 30,
+      'view' => 16,
+      'date_format' => 11,
+      'entity_form_display' => 31,
       'entity_form_mode' => 1,
-      'entity_view_display' => 57,
-      'entity_view_mode' => 12,
-      'base_field_override' => 40,
+      'entity_view_display' => 61,
+      'entity_view_mode' => 14,
+      'base_field_override' => 41,
     ];
   }
 
@@ -115,11 +121,14 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
     $counts = $this->getEntityCounts();
     $counts['block_content'] = 3;
     $counts['comment'] = 9;
+    $counts['entity_view_display'] = 61;
+    $counts['entity_view_mode'] = 14;
     $counts['file'] = 8;
     $counts['menu_link_content'] = 11;
     $counts['node'] = 19;
     $counts['taxonomy_term'] = 16;
     $counts['user'] = 8;
+    $counts['view'] = 16;
     return $counts;
   }
 
@@ -128,6 +137,7 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
    */
   protected function getAvailablePaths() {
     return [
+      'Aggregator',
       'Block',
       'Block translation',
       'Book',
@@ -141,6 +151,7 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
       'Email',
       'FileField',
       'Filter',
+      'Forum',
       'ImageCache',
       'ImageField',
       'Internationalization',
@@ -149,7 +160,6 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
       'Menu translation',
       'Node',
       'Node Reference',
-      'Node Reference URL Widget',
       'Option Widgets',
       'Path',
       'Profile translation',
@@ -182,10 +192,7 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
    * {@inheritdoc}
    */
   protected function getMissingPaths() {
-    return [
-      'Aggregator',
-      'Forum',
-    ];
+    return [];
   }
 
   /**
@@ -199,7 +206,7 @@ class Upgrade6Test extends MigrateUpgradeExecuteTestBase {
     $this->assertUserLogIn(2, 'john.doe_pass');
 
     $this->assertFollowUpMigrationResults();
-    $this->assertEntityRevisionsCount('node', 26);
+
     $this->assertEmailsSent();
   }
 

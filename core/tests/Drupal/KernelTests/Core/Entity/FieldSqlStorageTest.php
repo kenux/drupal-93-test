@@ -71,16 +71,13 @@ class FieldSqlStorageTest extends EntityKernelTestBase {
    */
   protected $tableMapping;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test_rev');
     $entity_type = 'entity_test_rev';
 
-    $this->fieldName = $this->randomMachineName();
+    $this->fieldName = strtolower($this->randomMachineName());
     $this->fieldCardinality = 4;
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $this->fieldName,
@@ -107,7 +104,6 @@ class FieldSqlStorageTest extends EntityKernelTestBase {
    */
   public function testFieldLoad() {
     $entity_type = $bundle = 'entity_test_rev';
-    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
     $storage = $this->container->get('entity_type.manager')->getStorage($entity_type);
 
     $columns = ['bundle', 'deleted', 'entity_id', 'revision_id', 'delta', 'langcode', $this->tableMapping->getFieldColumnName($this->fieldStorage, 'value')];
@@ -284,7 +280,7 @@ class FieldSqlStorageTest extends EntityKernelTestBase {
     $storage = $this->container->get('entity_type.manager')->getStorage($entity_type);
 
     // Create two fields and generate random values.
-    $name_base = $this->randomMachineName(FieldStorageConfig::NAME_MAX_LENGTH - 1);
+    $name_base = mb_strtolower($this->randomMachineName(FieldStorageConfig::NAME_MAX_LENGTH - 1));
     $field_names = [];
     $values = [];
     for ($i = 0; $i < 2; $i++) {
@@ -428,15 +424,15 @@ class FieldSqlStorageTest extends EntityKernelTestBase {
     $field_storage->setIndexes(['value' => [['value', 255]]]);
     $field_storage->save();
     foreach ($tables as $table) {
-      $this->assertTrue(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value"), "Index on value created in $table");
+      $this->assertTrue(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value"), "Index on value created in @table", ['@table' => $table]);
     }
 
     // Add a different index, removing the existing custom one.
     $field_storage->setIndexes(['value_format' => [['value', 127], ['format', 127]]]);
     $field_storage->save();
     foreach ($tables as $table) {
-      $this->assertTrue(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value_format"), "Index on value_format created in $table");
-      $this->assertFalse(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value"), "Index on value removed in $table");
+      $this->assertTrue(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value_format"), "Index on value_format created in @table", ['@table' => $table]);
+      $this->assertFalse(Database::getConnection()->schema()->indexExists($table, "{$field_name}_value"), "Index on value removed in @table", ['@table' => $table]);
     }
 
     // Verify that the tables were not dropped in the process.

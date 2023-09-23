@@ -20,7 +20,8 @@ class LanguageBrowserDetectionTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
-   * Tests mappings between browser language codes and Drupal language codes.
+   * Tests for adding, editing and deleting mappings between browser language
+   * codes and Drupal language codes.
    */
   public function testUIBrowserLanguageMappings() {
     // User to manage languages.
@@ -49,7 +50,7 @@ class LanguageBrowserDetectionTest extends BrowserTestBase {
     $this->drupalGet('admin/config/regional/language/detection/browser/delete/' . $browser_langcode);
     $this->submitForm($edit, 'Confirm');
 
-    $this->assertSession()->statusMessageContains("The mapping for the {$browser_langcode} browser language code has been deleted.", 'status');
+    $this->assertSession()->pageTextContains("The mapping for the {$browser_langcode} browser language code has been deleted.");
 
     // Check we went back to the browser negotiation mapping overview.
     $this->assertSession()->addressEquals(Url::fromRoute('language.negotiation_browser'));
@@ -70,7 +71,7 @@ class LanguageBrowserDetectionTest extends BrowserTestBase {
     // Add the same custom mapping again.
     $this->drupalGet('admin/config/regional/language/detection/browser');
     $this->submitForm($edit, 'Save configuration');
-    $this->assertSession()->statusMessageContains('Browser language codes must be unique.', 'error');
+    $this->assertSession()->pageTextContains('Browser language codes must be unique.');
 
     // Change browser language code of our custom mapping to zh-sg.
     $edit = [
@@ -79,7 +80,7 @@ class LanguageBrowserDetectionTest extends BrowserTestBase {
     ];
     $this->drupalGet('admin/config/regional/language/detection/browser');
     $this->submitForm($edit, 'Save configuration');
-    $this->assertSession()->statusMessageContains('Browser language codes must be unique.', 'error');
+    $this->assertSession()->pageTextContains('Browser language codes must be unique.');
 
     // Change Drupal language code of our custom mapping to zh-hans.
     $edit = [

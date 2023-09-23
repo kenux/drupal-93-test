@@ -4,9 +4,9 @@ namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Core\Field\Entity\BaseFieldOverride;
 use Drupal\node\Entity\NodeType;
-use Drupal\Tests\rest\Functional\EntityResource\ConfigEntityResourceTestBase;
+use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
 
-abstract class BaseFieldOverrideResourceTestBase extends ConfigEntityResourceTestBase {
+abstract class BaseFieldOverrideResourceTestBase extends EntityResourceTestBase {
 
   /**
    * {@inheritdoc}
@@ -44,7 +44,6 @@ abstract class BaseFieldOverrideResourceTestBase extends ConfigEntityResourceTes
       'field_name' => 'promote',
       'entity_type' => 'node',
       'bundle' => 'camelids',
-      'label' => 'Promote to front page',
     ]);
     $entity->save();
 
@@ -69,7 +68,7 @@ abstract class BaseFieldOverrideResourceTestBase extends ConfigEntityResourceTes
       'field_name' => 'promote',
       'field_type' => 'boolean',
       'id' => 'node.camelids.promote',
-      'label' => 'Promote to front page',
+      'label' => NULL,
       'langcode' => 'en',
       'required' => FALSE,
       'settings' => [
@@ -87,7 +86,6 @@ abstract class BaseFieldOverrideResourceTestBase extends ConfigEntityResourceTes
    */
   protected function getNormalizedPostEntity() {
     // @todo Update in https://www.drupal.org/node/2300677.
-    return [];
   }
 
   /**

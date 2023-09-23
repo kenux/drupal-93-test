@@ -18,11 +18,6 @@ class WidgetWithoutTypesTest extends MediaLibraryTestBase {
   protected static $modules = ['field_ui'];
 
   /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
-
-  /**
    * Tests that the widget works as expected when media types are deleted.
    */
   public function testWidgetWithoutMediaTypes() {
@@ -37,7 +32,7 @@ class WidgetWithoutTypesTest extends MediaLibraryTestBase {
     ]);
     $this->drupalLogin($user);
 
-    $default_message = 'There are no allowed media types configured for this field. Contact the site administrator.';
+    $default_message = 'There are no allowed media types configured for this field. Please contact the site administrator.';
 
     $this->drupalGet('node/add/basic_page');
 
@@ -100,8 +95,8 @@ class WidgetWithoutTypesTest extends MediaLibraryTestBase {
     $field_empty_types_message = 'There are no allowed media types configured for this field. <a href="' . $field_empty_types_url->toString() . '">Edit the field settings</a> to select the allowed media types.';
 
     $field_null_types_url = new Url('entity.field_config.node_field_edit_form', [
-      'field_config' => 'node.basic_page.field_null_types_media',
-    ] + $route_bundle_params);
+        'field_config' => 'node.basic_page.field_null_types_media',
+      ] + $route_bundle_params);
     $field_null_types_message = 'There are no allowed media types configured for this field. <a href="' . $field_null_types_url->toString() . '">Edit the field settings</a> to select the allowed media types.';
 
     // Visit a node create page.
@@ -134,7 +129,7 @@ class WidgetWithoutTypesTest extends MediaLibraryTestBase {
     // Visit a node create page.
     $this->drupalGet('node/add/basic_page');
 
-    $field_ui_uninstalled_message = 'There are no allowed media types configured for this field. Contact the site administrator.';
+    $field_ui_uninstalled_message = 'There are no allowed media types configured for this field. Please contact the site administrator.';
 
     // Assert the link is now longer part of the message.
     $assert_session->elementNotExists('named', ['link', 'Edit the field settings']);

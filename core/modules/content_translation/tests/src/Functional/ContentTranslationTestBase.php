@@ -82,10 +82,7 @@ abstract class ContentTranslationTestBase extends BrowserTestBase {
    */
   protected $manager;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
+  protected function setUp() {
     parent::setUp();
 
     $this->setupLanguages();

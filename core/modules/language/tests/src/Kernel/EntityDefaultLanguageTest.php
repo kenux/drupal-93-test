@@ -38,7 +38,6 @@ class EntityDefaultLanguageTest extends KernelTestBase {
     // Activate Spanish language, so there are two languages activated.
     $language = $this->container->get('entity_type.manager')->getStorage('configurable_language')->create([
       'id' => 'es',
-      'label' => 'Spanish',
     ]);
     $language->save();
 

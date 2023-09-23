@@ -7,8 +7,6 @@ use Drupal\Tests\BrowserTestBase;
 /**
  * Test disabling content translation module.
  *
- * @covers \Drupal\language\Form\ContentLanguageSettingsForm
- * @covers ::_content_translation_form_language_content_settings_form_alter
  * @group content_translation
  */
 class ContentTranslationDisableSettingTest extends BrowserTestBase {
@@ -57,7 +55,7 @@ class ContentTranslationDisableSettingTest extends BrowserTestBase {
     ];
     $this->submitForm($edit, 'Save configuration');
 
-    $assert->statusMessageContains('Settings successfully updated.', 'status');
+    $assert->pageTextContains('Settings successfully updated.');
 
     $assert->checkboxChecked($group_checkbox);
 
@@ -68,7 +66,7 @@ class ContentTranslationDisableSettingTest extends BrowserTestBase {
     ];
     $this->submitForm($edit, 'Save configuration');
 
-    $assert->statusMessageContains('Settings successfully updated.', 'status');
+    $assert->pageTextContains('Settings successfully updated.');
 
     $assert->checkboxNotChecked($group_checkbox);
   }

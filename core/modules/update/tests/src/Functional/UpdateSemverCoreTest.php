@@ -5,12 +5,12 @@ namespace Drupal\Tests\update\Functional;
 use Drupal\Core\Url;
 
 /**
- * Tests the semantic version handling in the Update Manager.
+ * Tests the Update Manager module through a series of functional tests using
+ * mock XML data.
  *
  * @group update
  */
 class UpdateSemverCoreTest extends UpdateSemverTestBase {
-  use UpdateTestTrait;
 
   /**
    * {@inheritdoc}
@@ -34,7 +34,12 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
    *   The version.
    */
   protected function setProjectInstalledVersion($version) {
-    $this->mockDefaultExtensionsInfo(['version' => $version]);
+    $setting = [
+      '#all' => [
+        'version' => $version,
+      ],
+    ];
+    $this->config('update_test.settings')->set('system_info', $setting)->save();
   }
 
   /**
@@ -94,12 +99,10 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
    * - drupal.sec.2.0_9.0.0.xml
    *   - 8.2.0
    *   - 9.0.0
-   * - drupal.sec.9.5.0.xml
-   *   - 9.4.0
-   *   - 9.5.0
-   * - drupal.sec.10.5.0.xml
-   *   - 10.4.0
-   *   - 10.5.0
+   * - drupal.sec.9.0.xml
+   *   - 8.9.0
+   * - drupal.sec.9.9.0.xml
+   *   - 9.9.0
    */
   public function securityCoverageMessageProvider() {
     $release_coverage_message = 'Visit the release cycle overview for more information on supported releases.';
@@ -179,88 +182,78 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
       ],
     ];
 
-    // Drupal 9.4.x test cases.
+    // Drupal 8.8.x test cases.
     $test_cases += [
-      // Ensure that a message is displayed during 9.4's active support.
-      '9.4.0, supported' => [
-        'installed_version' => '9.4.0',
-        'fixture' => 'sec.9.5.0',
+      // Ensure that a message is displayed during 8.8's active support.
+      '8.8.0, supported' => [
+        'installed_version' => '8.8.0',
+        'fixture' => 'sec.9.0',
         'requirements_section_heading' => 'Checked',
-        'message' => "Covered until 2023-Jun-21 $release_coverage_message",
-        'mock_date' => '2022-12-13',
+        'message' => "Covered until 2020-Dec-02 $release_coverage_message",
+        'mock_date' => '2020-06-01',
       ],
       // Ensure a warning is displayed if less than six months remain until the
-      // end of 9.4's security coverage.
-      '9.4.0, supported, 6 months warn' => [
-        'installed_version' => '9.4.0',
-        'fixture' => 'sec.9.5.0',
+      // end of 8.8's security coverage.
+      '8.8.0, supported, 6 months warn' => [
+        'installed_version' => '8.8.0',
+        'fixture' => 'sec.9.0',
         'requirements_section_heading' => 'Warnings found',
-        'message' => "Covered until 2023-Jun-21 $update_soon_message $release_coverage_message",
-        'mock_date' => '2022-12-14',
+        'message' => "Covered until 2020-Dec-02 $update_soon_message $release_coverage_message",
+        'mock_date' => '2020-06-02',
       ],
     ];
     // Ensure that the message does not change, including on the last day of
     // security coverage.
-    $test_cases['9.4.0, supported, last day warn'] = $test_cases['9.4.0, supported, 6 months warn'];
-    $test_cases['9.4.0, supported, last day warn']['mock_date'] = '2023-06-20';
+    $test_cases['8.8.0, supported, last day warn'] = $test_cases['8.8.0, supported, 6 months warn'];
+    $test_cases['8.8.0, supported, last day warn']['mock_date'] = '2020-12-01';
 
-    // Ensure that if the 9.4 support window is finished a message is
+    // Ensure that if the 8.8 support window is finished a message is
     // displayed.
-    $test_cases['9.4.0, support over'] = [
-      'installed_version' => '9.4.0',
-      'fixture' => 'sec.9.5.0',
+    $test_cases['8.8.0, support over'] = [
+      'installed_version' => '8.8.0',
+      'fixture' => 'sec.9.0',
       'requirements_section_heading' => 'Errors found',
       'message' => "$coverage_ended_message $update_asap_message $release_coverage_message",
-      'mock_date' => '2023-06-22',
+      'mock_date' => '2020-12-02',
     ];
 
-    // Drupal 9.5 test cases.
-    $test_cases['9.5.0, supported'] = [
-      'installed_version' => '9.5.0',
-      'fixture' => 'sec.9.5.0',
+    // Drupal 8.9 LTS test cases.
+    $test_cases['8.9.0, lts supported'] = [
+      'installed_version' => '8.9.0',
+      'fixture' => 'sec.9.0',
       'requirements_section_heading' => 'Checked',
-      'message' => "Covered until 2023-Nov $release_coverage_message",
-      'mock_date' => '2023-01-01',
+      'message' => "Covered until 2021-Nov $release_coverage_message",
+      'mock_date' => '2021-01-01',
     ];
-    // Ensure a warning is displayed if less than six months remain until the
-    // end of 9.5's security coverage.
-    $test_cases['9.5.0, supported, 6 months warn'] = [
-      'installed_version' => '9.5.0',
-      'fixture' => 'sec.9.5.0',
-      'requirements_section_heading' => 'Warnings found',
-      'message' => "Covered until 2023-Nov $update_soon_message $release_coverage_message",
-      'mock_date' => '2023-05-15',
-    ];
-
     // Ensure that the message does not change, including on the last day of
     // security coverage.
-    $test_cases['9.5.0, supported, last day warn'] = $test_cases['9.5.0, supported, 6 months warn'];
-    $test_cases['9.5.0, supported, last day warn']['mock_date'] = '2023-10-31';
+    $test_cases['8.9.0, lts supported, last day'] = $test_cases['8.9.0, lts supported'];
+    $test_cases['8.9.0, lts supported, last day']['mock_date'] = '2021-10-31';
 
-    // Ensure that if the support window is finished a message is displayed.
-    $test_cases['9.5.0, support over'] = [
-      'installed_version' => '9.5.0',
-      'fixture' => 'sec.9.5.0',
+    // Ensure that if LTS support window is finished a message is displayed.
+    $test_cases['8.9.0, lts support over'] = [
+      'installed_version' => '8.9.0',
+      'fixture' => 'sec.9.0',
       'requirements_section_heading' => 'Errors found',
       'message' => "$coverage_ended_message $update_asap_message $release_coverage_message",
-      'mock_date' => '2023-11-01',
+      'mock_date' => '2021-11-01',
     ];
 
     // Drupal 9 test cases.
     $test_cases += [
-      // Ensure the end dates for 9.4 and 9.5 only apply to major version 9.
-      '10.5.0' => [
-        'installed_version' => '10.5.0',
-        'fixture' => 'sec.10.5.0',
+      // Ensure the end dates for 8.8 and 8.9 only apply to major version 8.
+      '9.9.0' => [
+        'installed_version' => '9.9.0',
+        'fixture' => 'sec.9.9.0',
         'requirements_section_heading' => 'Checked',
-        'message' => "Covered until 10.7.0 $release_coverage_message",
+        'message' => "Covered until 9.11.0 $release_coverage_message",
         'mock_date' => '',
       ],
-      '10.4.0' => [
-        'installed_version' => '10.4.0',
-        'fixture' => 'sec.10.5.0',
+      '9.8.0' => [
+        'installed_version' => '9.8.0',
+        'fixture' => 'sec.9.9.0',
         'requirements_section_heading' => 'Warnings found',
-        'message' => "Covered until 10.6.0 Update to 10.5 or higher soon to continue receiving security updates. $release_coverage_message",
+        'message' => "Covered until 9.10.0 Update to 9.9 or higher soon to continue receiving security updates. $release_coverage_message",
         'mock_date' => '',
       ],
     ];
@@ -272,17 +265,18 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
    * Ensures proper results where there are date mismatches among modules.
    */
   public function testDatestampMismatch() {
-    $this->mockInstalledExtensionsInfo([
+    $system_info = [
+      '#all' => [
+        // We need to think we're running a -dev snapshot to see dates.
+        'version' => '8.1.0-dev',
+        'datestamp' => time(),
+      ],
       'block' => [
         // This is 2001-09-09 01:46:40 GMT, so test for "2001-Sep-".
         'datestamp' => '1000000000',
       ],
-    ]);
-    // We need to think we're running a -dev snapshot to see dates.
-    $this->mockDefaultExtensionsInfo([
-      'version' => '8.1.0-dev',
-      'datestamp' => time(),
-    ]);
+    ];
+    $this->config('update_test.settings')->set('system_info', $system_info)->save();
     $this->refreshUpdateStatus(['drupal' => 'dev']);
     $this->assertSession()->pageTextNotContains('2001-Sep-');
     $this->assertSession()->pageTextContains('Up to date');
@@ -298,7 +292,9 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
     $this->config('update.settings')
       ->set('fetch.url', Url::fromRoute('update_test.update_test')->setAbsolute()->toString())
       ->save();
-    $this->mockReleaseHistory(['drupal' => '0.0']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => '0.0'])
+      ->save();
 
     $this->cronRun();
     $this->drupalGet('admin/modules');
@@ -331,7 +327,9 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
     $this->config('update.settings')
       ->set('fetch.url', Url::fromRoute('update_test.update_test')->setAbsolute()->toString())
       ->save();
-    $this->mockReleaseHistory(['drupal' => '0.0']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => '0.0'])
+      ->save();
 
     $this->drupalGet('admin/reports/updates');
     $this->clickLink('Check manually');
@@ -349,14 +347,15 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
     $this->drupalLogin($this->drupalCreateUser([
       'administer site configuration',
       'administer modules',
-      'view update notifications',
     ]));
     $this->setProjectInstalledVersion('8.0.0');
     // Instead of using refreshUpdateStatus(), set these manually.
     $this->config('update.settings')
       ->set('fetch.url', Url::fromRoute('update_test.update_test')->setAbsolute()->toString())
       ->save();
-    $this->mockReleaseHistory(['drupal' => '0.1']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => '0.1'])
+      ->save();
 
     $this->drupalGet('admin/reports/updates');
     $this->clickLink('Check manually');
@@ -365,16 +364,6 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
     $this->drupalGet('admin/modules');
     $this->assertSession()->pageTextContains('There are updates available for your version of Drupal.');
     $this->assertSession()->pageTextNotContains('There is a security update available for your version of Drupal.');
-
-    // A user without the "view update notifications" permission shouldn't be
-    // notified about available updates.
-    $this->drupalLogin($this->drupalCreateUser([
-      'administer site configuration',
-      'administer modules',
-    ]));
-    $this->drupalGet('admin/modules');
-    $this->assertSession()->statusCodeEquals(200);
-    $this->assertSession()->pageTextNotContains('There are updates available for your version of Drupal.');
   }
 
   /**
@@ -385,14 +374,15 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
       'administer site configuration',
       'administer modules',
       'administer themes',
-      'view update notifications',
     ]));
     $this->setProjectInstalledVersion('8.0.0');
     // Instead of using refreshUpdateStatus(), set these manually.
     $this->config('update.settings')
       ->set('fetch.url', Url::fromRoute('update_test.update_test')->setAbsolute()->toString())
       ->save();
-    $this->mockReleaseHistory(['drupal' => 'sec.0.2']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => 'sec.0.2'])
+      ->save();
 
     $this->drupalGet('admin/reports/updates');
     $this->clickLink('Check manually');
@@ -463,7 +453,9 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
     $this->config('update.settings')
       ->set('fetch.url', Url::fromRoute('update_test.update_test')->setAbsolute()->toString())
       ->save();
-    $this->mockReleaseHistory(['drupal' => '0.1']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => '0.1'])
+      ->save();
 
     $this->drupalGet('admin/reports/updates');
     $this->assertSession()->pageTextContains('Language');
@@ -500,7 +492,6 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
   public function testBrokenThenFixedUpdates() {
     $this->drupalLogin($this->drupalCreateUser([
       'administer site configuration',
-      'view update notifications',
       'access administration pages',
     ]));
     $this->setProjectInstalledVersion('8.0.0');
@@ -510,20 +501,24 @@ class UpdateSemverCoreTest extends UpdateSemverTestBase {
       ->save();
     // Use update XML that has no information to simulate a broken response from
     // the update server.
-    $this->mockReleaseHistory(['drupal' => 'broken']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => 'broken'])
+      ->save();
 
     // This will retrieve broken updates.
     $this->cronRun();
     $this->drupalGet('admin/reports/status');
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->pageTextContains('There was a problem checking available updates for Drupal.');
-    $this->mockReleaseHistory(['drupal' => 'sec.0.2']);
+    $this->config('update_test.settings')
+      ->set('xml_map', ['drupal' => 'sec.0.2'])
+      ->save();
     // Simulate the update_available_releases state expiring before cron is run
     // and the state is used by \Drupal\update\UpdateManager::getProjects().
     \Drupal::keyValueExpirable('update_available_releases')->deleteAll();
     // This cron run should retrieve fixed updates.
     $this->cronRun();
-    $this->drupalGet('admin/config');
+    $this->drupalGet('admin/structure');
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->pageTextContains('There is a security update available for your version of Drupal.');
   }

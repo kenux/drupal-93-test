@@ -24,9 +24,6 @@ class ContentTranslationEntityBundleUITest extends BrowserTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     $user = $this->drupalCreateUser([
@@ -47,7 +44,7 @@ class ContentTranslationEntityBundleUITest extends BrowserTestBase {
     // Enable content translation.
     $edit = ['language_configuration[content_translation]' => TRUE];
     $this->drupalGet('admin/structure/types/manage/article');
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save content type');
 
     // Make sure add page does not inherit translation configuration from first
     // content type.

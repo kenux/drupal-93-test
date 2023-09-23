@@ -26,9 +26,6 @@ class NumberFieldTest extends BrowserTestBase {
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->drupalLogin($this->drupalCreateUser([
@@ -47,7 +44,7 @@ class NumberFieldTest extends BrowserTestBase {
    */
   public function testNumberDecimalField() {
     // Create a field with settings to validate.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -138,7 +135,7 @@ class NumberFieldTest extends BrowserTestBase {
     $maximum = rand(2000, 4000);
 
     // Create a field with settings to validate.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     $storage = FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -290,7 +287,7 @@ class NumberFieldTest extends BrowserTestBase {
    */
   public function testNumberFloatField() {
     // Create a field with settings to validate.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -383,7 +380,7 @@ class NumberFieldTest extends BrowserTestBase {
    */
   public function testCreateNumberFloatField() {
     // Create a float field.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',
@@ -408,7 +405,7 @@ class NumberFieldTest extends BrowserTestBase {
    */
   public function testCreateNumberDecimalField() {
     // Create a decimal field.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     FieldStorageConfig::create([
       'field_name' => $field_name,
       'entity_type' => 'entity_test',

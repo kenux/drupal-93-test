@@ -50,8 +50,8 @@ class BookRelationshipTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE, $modules = []): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
 
     // Create users.
     $this->bookAuthor = $this->drupalCreateUser(
@@ -116,8 +116,8 @@ class BookRelationshipTest extends ViewTestBase {
     static $number = 0;
 
     $edit = [];
-    $edit['title[0][value]'] = $number . ' - test node ' . $this->randomMachineName(10);
-    $edit['body[0][value]'] = 'test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
+    $edit['title[0][value]'] = $number . ' - SimpleTest test node ' . $this->randomMachineName(10);
+    $edit['body[0][value]'] = 'SimpleTest test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
     $edit['book[bid]'] = $book_nid;
 
     if ($parent !== NULL) {

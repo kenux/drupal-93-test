@@ -31,7 +31,6 @@ class FormTest extends FieldTestBase {
     'options',
     'entity_test',
     'locale',
-    'field_ui',
   ];
 
   /**
@@ -67,16 +66,12 @@ class FormTest extends FieldTestBase {
    */
   protected $field;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
     $web_user = $this->drupalCreateUser([
       'view test entity',
       'administer entity_test content',
-      'administer entity_test fields',
     ]);
     $this->drupalLogin($web_user);
 
@@ -273,11 +268,6 @@ class FormTest extends FieldTestBase {
       ->setComponent($field_name)
       ->save();
 
-    // Verify that only one "Default value" field
-    // exists on the Manage field display.
-    $this->drupalGet("entity_test/structure/entity_test/fields/entity_test.entity_test.{$field_name}");
-    $this->assertSession()->elementsCount('xpath', "//table[@id='field-unlimited-values']/tbody/tr//input[contains(@class, 'form-text')]", 1);
-
     // Display creation form -> 1 widget.
     $this->drupalGet('entity_test/add');
     $this->assertSession()->fieldValueEquals("{$field_name}[0][value]", '');
@@ -285,7 +275,8 @@ class FormTest extends FieldTestBase {
     $this->assertSession()->fieldNotExists("{$field_name}[1][value]");
 
     // Check if aria-describedby attribute is placed on multiple value widgets.
-    $this->assertSession()->elementAttributeContains('xpath', '//table[@id="field-unlimited-values"]', 'aria-describedby', 'edit-field-unlimited--description');
+    $elements = $this->xpath('//table[@id="field-unlimited-values" and @aria-describedby="edit-field-unlimited--description"]');
+    $this->assertTrue(isset($elements[0]), 'aria-describedby attribute is properly placed on multiple value widgets.');
 
     // Press 'add more' button -> 2 widgets.
     $this->submitForm([], 'Add another item');
@@ -371,7 +362,8 @@ class FormTest extends FieldTestBase {
     // Display creation form -> 1 widget.
     $this->drupalGet('entity_test/add');
     // Check that the Required symbol is present for the multifield label.
-    $this->assertSession()->elementAttributeContains('xpath', "//h4[contains(@class, 'label') and contains(text(), '{$this->field['label']}')]", 'class', 'js-form-required');
+    $element = $this->xpath('//h4[contains(@class, "label") and contains(@class, "js-form-required") and contains(text(), :value)]', [':value' => $this->field['label']]);
+    $this->assertTrue(isset($element[0]), 'Required symbol added field label.');
     // Check that the label of the field input is visually hidden and contains
     // the field title and an indication of the delta for a11y.
     $this->assertSession()->elementExists('xpath', "//label[@for='edit-field-unlimited-0-value' and contains(@class, 'visually-hidden') and contains(text(), '{$this->field['label']} (value 1)')]");
@@ -578,10 +570,9 @@ class FormTest extends FieldTestBase {
     $this->assertEquals(2, $entity->{$field_name}->value, 'New revision has the expected value for the field with edit access.');
 
     // Check that the revision is also saved in the revisions table.
-    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
-    $storage = $this->container->get('entity_type.manager')
-      ->getStorage($entity_type);
-    $entity = $storage->loadRevision($entity->getRevisionId());
+    $entity = $this->container->get('entity_type.manager')
+      ->getStorage($entity_type)
+      ->loadRevision($entity->getRevisionId());
     $this->assertEquals(99, $entity->{$field_name_no_access}->value, 'New revision has the expected value for the field with no edit access.');
     $this->assertEquals(2, $entity->{$field_name}->value, 'New revision has the expected value for the field with edit access.');
   }

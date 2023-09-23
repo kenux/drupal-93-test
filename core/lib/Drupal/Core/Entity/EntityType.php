@@ -77,13 +77,6 @@ class EntityType extends PluginDefinition implements EntityTypeInterface {
   protected $admin_permission;
 
   /**
-   * The name of the collection permission.
-   *
-   * @var string
-   */
-  protected $collection_permission;
-
-  /**
    * The permission granularity level.
    *
    * The allowed values are respectively "entity_type" or "bundle".
@@ -207,15 +200,9 @@ class EntityType extends PluginDefinition implements EntityTypeInterface {
   /**
    * A definite singular/plural name of the type.
    *
-   * Needed keys: "singular" and "plural". Can also have key: "context".
-   * @code
-   * [
-   *    'singular' => '@count entity',
-   *    'plural' => '@count entities',
-   *    'context' => 'Entity context',
-   * ]
+   * Needed keys: "singular" and "plural".
    *
-   * @var string[]
+   * @var string|\Drupal\Core\StringTranslation\TranslatableMarkup
    *
    * @see \Drupal\Core\Entity\EntityTypeInterface::getCountLabel()
    */
@@ -232,8 +219,6 @@ class EntityType extends PluginDefinition implements EntityTypeInterface {
    * The machine name of the entity type group.
    *
    * @var string
-   *
-   * @see self::getGroup()
    */
   protected $group;
 
@@ -449,6 +434,14 @@ class EntityType extends PluginDefinition implements EntityTypeInterface {
   /**
    * {@inheritdoc}
    */
+  public function isSubclassOf($class) {
+    @trigger_error(__METHOD__ . '() is deprecated in drupal:8.3.0 and is removed from drupal:10.0.0. Use Drupal\Core\Entity\EntityTypeInterface::entityClassImplements() instead. See https://www.drupal.org/node/2842808', E_USER_DEPRECATED);
+    return $this->entityClassImplements($class);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getHandlerClasses() {
     return $this->handlers;
   }
@@ -613,13 +606,6 @@ class EntityType extends PluginDefinition implements EntityTypeInterface {
    */
   public function getAdminPermission() {
     return $this->admin_permission ?: FALSE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCollectionPermission(): ?string {
-    return $this->collection_permission;
   }
 
   /**

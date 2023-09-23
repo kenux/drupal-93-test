@@ -30,8 +30,6 @@ class UuidResolverTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->entityRepository = $this->createMock(EntityRepositoryInterface::class);
 
     $this->resolver = new UuidResolver($this->entityRepository);
@@ -59,7 +57,7 @@ class UuidResolverTest extends UnitTestCase {
     $normalizer->expects($this->once())
       ->method('getUuid')
       ->with([])
-      ->willReturn(NULL);
+      ->will($this->returnValue(NULL));
     $this->assertNull($this->resolver->resolve($normalizer, [], 'test_type'));
   }
 
@@ -72,13 +70,13 @@ class UuidResolverTest extends UnitTestCase {
     $this->entityRepository->expects($this->once())
       ->method('loadEntityByUuid')
       ->with('test_type')
-      ->willReturn(NULL);
+      ->will($this->returnValue(NULL));
 
     $normalizer = $this->createMock('Drupal\serialization\EntityResolver\UuidReferenceInterface');
     $normalizer->expects($this->once())
       ->method('getUuid')
       ->with([])
-      ->willReturn($uuid);
+      ->will($this->returnValue($uuid));
 
     $this->assertNull($this->resolver->resolve($normalizer, [], 'test_type'));
   }
@@ -92,18 +90,18 @@ class UuidResolverTest extends UnitTestCase {
     $entity = $this->createMock('Drupal\Core\Entity\EntityInterface');
     $entity->expects($this->once())
       ->method('id')
-      ->willReturn(1);
+      ->will($this->returnValue(1));
 
     $this->entityRepository->expects($this->once())
       ->method('loadEntityByUuid')
       ->with('test_type', $uuid)
-      ->willReturn($entity);
+      ->will($this->returnValue($entity));
 
     $normalizer = $this->createMock('Drupal\serialization\EntityResolver\UuidReferenceInterface');
     $normalizer->expects($this->once())
       ->method('getUuid')
       ->with([])
-      ->willReturn($uuid);
+      ->will($this->returnValue($uuid));
     $this->assertSame(1, $this->resolver->resolve($normalizer, [], 'test_type'));
   }
 

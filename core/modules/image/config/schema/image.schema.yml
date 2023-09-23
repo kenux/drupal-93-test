@@ -5,9 +5,9 @@ image.style.*:
   label: 'Image style'
   mapping:
     name:
-      type: machine_name
+      type: string
     label:
-      type: required_label
+      type: label
       label: 'Label'
     effects:
       type: sequence
@@ -142,13 +142,6 @@ field.formatter.settings.image:
     image_style:
       type: string
       label: 'Image style'
-    image_loading:
-      type: mapping
-      label: 'Image loading settings'
-      mapping:
-        attribute:
-          type: string
-          label: 'Loading attribute'
 
 field.formatter.settings.image_url:
   type: mapping

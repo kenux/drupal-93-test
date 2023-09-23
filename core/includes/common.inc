@@ -8,10 +8,12 @@
  * a cached page are instead located in bootstrap.inc.
  */
 
+use Drupal\Component\Utility\Bytes;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\DrupalKernel;
-use Drupal\Core\StringTranslation\ByteSizeMarkup;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * @defgroup php_wrappers PHP wrapper functions
@@ -131,16 +133,48 @@ const JS_THEME = 100;
  *
  * @return \Drupal\Core\StringTranslation\TranslatableMarkup
  *   A translated string representation of the size.
- *
- * @deprecated in drupal:10.2.0 and is removed from drupal:11.0.0. Use
- *   \Drupal\Core\StringTranslation\ByteSizeMarkup::create($size, $langcode)
- *   instead.
- *
- * @see https://www.drupal.org/node/2999981
  */
 function format_size($size, $langcode = NULL) {
-  @trigger_error('format_size() is deprecated in drupal:10.2.0 and is removed from drupal:11.0.0. Use \Drupal\Core\StringTranslation\ByteSizeMarkup::create($size, $langcode) instead. See https://www.drupal.org/node/2999981', E_USER_DEPRECATED);
-  return ByteSizeMarkup::create($size ?? 0, $langcode);
+  $absolute_size = abs($size);
+  if ($absolute_size < Bytes::KILOBYTE) {
+    return \Drupal::translation()->formatPlural($size, '1 byte', '@count bytes', [], ['langcode' => $langcode]);
+  }
+  // Create a multiplier to preserve the sign of $size.
+  $sign = $absolute_size / $size;
+  foreach (['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] as $unit) {
+    $absolute_size /= Bytes::KILOBYTE;
+    $rounded_size = round($absolute_size, 2);
+    if ($rounded_size < Bytes::KILOBYTE) {
+      break;
+    }
+  }
+  $args = ['@size' => $rounded_size * $sign];
+  $options = ['langcode' => $langcode];
+  switch ($unit) {
+    case 'KB':
+      return new TranslatableMarkup('@size KB', $args, $options);
+
+    case 'MB':
+      return new TranslatableMarkup('@size MB', $args, $options);
+
+    case 'GB':
+      return new TranslatableMarkup('@size GB', $args, $options);
+
+    case 'TB':
+      return new TranslatableMarkup('@size TB', $args, $options);
+
+    case 'PB':
+      return new TranslatableMarkup('@size PB', $args, $options);
+
+    case 'EB':
+      return new TranslatableMarkup('@size EB', $args, $options);
+
+    case 'ZB':
+      return new TranslatableMarkup('@size ZB', $args, $options);
+
+    case 'YB':
+      return new TranslatableMarkup('@size YB', $args, $options);
+  }
 }
 
 /**
@@ -159,6 +193,29 @@ function format_size($size, $langcode = NULL) {
  */
 function base_path() {
   return $GLOBALS['base_path'];
+}
+
+/**
+ * Constructs an array of the defaults that are used for JavaScript assets.
+ *
+ * @param $data
+ *   (optional) The default data parameter for the JavaScript asset array.
+ *
+ * @see hook_js_alter()
+ */
+function drupal_js_defaults($data = NULL) {
+  return [
+    'type' => 'file',
+    'group' => JS_DEFAULT,
+    'weight' => 0,
+    'scope' => 'header',
+    'cache' => TRUE,
+    'preprocess' => TRUE,
+    'attributes' => [],
+    'version' => NULL,
+    'data' => $data,
+    'browsers' => [],
+  ];
 }
 
 /**
@@ -313,6 +370,47 @@ function drupal_attach_tabledrag(&$element, array $options) {
 }
 
 /**
+ * Renders an element.
+ *
+ * This function renders an element. The top level element is shown with show()
+ * before rendering, so it will always be rendered even if hide() had been
+ * previously used on it.
+ *
+ * @param $element
+ *   The element to be rendered.
+ *
+ * @return
+ *   The rendered element.
+ *
+ * @deprecated in drupal:9.3.0 and is removed from drupal:10.0.0. Use
+ *   \Drupal\Core\Render\RendererInterface::render() instead.
+ *
+ * @see https://www.drupal.org/node/2939099
+ * @see \Drupal\Core\Render\RendererInterface
+ * @see show()
+ * @see hide()
+ */
+function render(&$element) {
+  @trigger_error('The render() function is deprecated in drupal:9.3.0 and is removed from drupal:10.0.0. Use \Drupal\Core\Render\RendererInterface::render() instead. See https://www.drupal.org/node/2939099', E_USER_DEPRECATED);
+  if (!$element && $element !== 0) {
+    return NULL;
+  }
+  if (is_array($element)) {
+    // Early return if this element was pre-rendered (no need to re-render).
+    if (isset($element['#printed']) && $element['#printed'] == TRUE && isset($element['#markup']) && strlen($element['#markup']) > 0) {
+      return $element['#markup'];
+    }
+    show($element);
+    return \Drupal::service('renderer')->render($element);
+  }
+  else {
+    // Safe-guard for inappropriate use of render() on flat variables: return
+    // the variable as-is.
+    return $element;
+  }
+}
+
+/**
  * Hides an element from later rendering.
  *
  * The first time render() or RenderInterface::render() is called on an element
@@ -327,7 +425,7 @@ function drupal_attach_tabledrag(&$element, array $options) {
  * @param $element
  *   The element to be hidden.
  *
- * @return array
+ * @return
  *   The element.
  *
  * @see \Drupal\Core\Render\RendererInterface
@@ -357,7 +455,7 @@ function hide(&$element) {
  * @param $element
  *   The element to be shown.
  *
- * @return array
+ * @return
  *   The element.
  *
  * @see \Drupal\Core\Render\RendererInterface
@@ -432,7 +530,7 @@ function show(&$element) {
  *   (optional) The Drupal Kernel. It is the caller's responsibility to rebuild
  *   the container if this is passed in. Sometimes drupal_flush_all_caches is
  *   used as a batch operation so $kernel will be an array, in this instance it
- *   will be treated as if it is NULL.
+ *   will be treated as if it it NULL.
  */
 function drupal_flush_all_caches($kernel = NULL) {
   // This is executed based on old/previously known information if $kernel is
@@ -441,14 +539,14 @@ function drupal_flush_all_caches($kernel = NULL) {
   $module_handler = \Drupal::moduleHandler();
   // Flush all persistent caches.
   $module_handler->invokeAll('cache_flush');
-  foreach (Cache::getBins() as $cache_backend) {
+  foreach (Cache::getBins() as $service_id => $cache_backend) {
     $cache_backend->deleteAll();
   }
 
   // Flush asset file caches.
   \Drupal::service('asset.css.collection_optimizer')->deleteAll();
   \Drupal::service('asset.js.collection_optimizer')->deleteAll();
-  \Drupal::service('asset.query_string')->reset();
+  _drupal_flush_css_js();
 
   // Reset all static caches.
   drupal_static_reset();
@@ -456,9 +554,7 @@ function drupal_flush_all_caches($kernel = NULL) {
   // Wipe the Twig PHP Storage cache.
   \Drupal::service('twig')->invalidate();
 
-  // Rebuild profile, profile, theme_engine and theme data.
-  \Drupal::service('extension.list.profile')->reset();
-  \Drupal::service('extension.list.theme_engine')->reset();
+  // Rebuild theme data that is stored in state.
   \Drupal::service('theme_handler')->refreshInfo();
   // In case the active theme gets requested later in the same request we need
   // to reset the theme manager.
@@ -498,15 +594,41 @@ function drupal_flush_all_caches($kernel = NULL) {
  *
  * Changing the dummy query string appended to CSS and JavaScript files forces
  * all browsers to reload fresh files.
- *
- * @deprecated in drupal:10.2.0 and is removed from drupal:11.0.0. Use
- *   Use \Drupal\Core\Asset\AssetQueryStringInterface::reset() instead.
- *
- * @see https://www.drupal.org/node/3358337
  */
 function _drupal_flush_css_js() {
-  @trigger_error('_drupal_flush_css_js is deprecated in drupal:10.2.0 and is removed from drupal:11.0.0. Use \Drupal\Core\Asset\AssetQueryStringInterface::reset() instead. See https://www.drupal.org/node/3358337', E_USER_DEPRECATED);
-  \Drupal::service('asset.query_string')->reset();
+  // The timestamp is converted to base 36 in order to make it more compact.
+  Drupal::state()->set('system.css_js_query_string', base_convert(REQUEST_TIME, 10, 36));
+}
+
+/**
+ * Outputs debug information.
+ *
+ * The debug information is passed on to trigger_error() after being converted
+ * to a string using print_r() or var_export().
+ *
+ * @param $data
+ *   Data to be output.
+ * @param $label
+ *   Label to prefix the data.
+ * @param $print_r
+ *   Flag to switch between print_r() and var_export() for data conversion to
+ *   string. Set $print_r to FALSE to use var_export() instead of print_r().
+ *   Passing recursive data structures to var_export() will generate an error.
+ *
+ * @deprecated in drupal:9.2.0 and is removed from drupal:10.0.0. Use dump()
+ *   instead.
+ *
+ * @see https://www.drupal.org/node/3192283
+ */
+function debug($data, $label = NULL, $print_r = TRUE) {
+  @trigger_error('debug() is deprecated in drupal:9.2.0 and is removed from drupal:10.0.0. Use dump() instead. See https://www.drupal.org/node/3192283', E_USER_DEPRECATED);
+  // Print $data contents to string.
+  $string = Html::escape($print_r ? print_r($data, TRUE) : var_export($data, TRUE));
+
+  // Display values with pre-formatting to increase readability.
+  $string = '<pre>' . $string . '</pre>';
+
+  trigger_error(trim($label ? "$label: $string" : $string));
 }
 
 /**
@@ -536,7 +658,7 @@ function drupal_get_updaters() {
 /**
  * Assembles the Drupal FileTransfer registry.
  *
- * @return array
+ * @return
  *   The Drupal FileTransfer class registry.
  *
  * @see \Drupal\Core\FileTransfer\FileTransfer

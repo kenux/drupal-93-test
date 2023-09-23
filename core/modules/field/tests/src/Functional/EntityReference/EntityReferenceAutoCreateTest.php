@@ -40,9 +40,6 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
    */
   protected $referencedType;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
 
@@ -103,7 +100,8 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
   }
 
   /**
-   * Tests the autocomplete input element and entity auto-creation.
+   * Tests that the autocomplete input element appears and the creation of a new
+   * entity.
    */
   public function testAutoCreate() {
     $this->drupalGet('node/add/' . $this->referencingType);
@@ -153,8 +151,6 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
   }
 
   /**
-   * Tests multiple target bundles.
-   *
    * Tests if an entity reference field having multiple target bundles is
    * storing the auto-created entity in the right destination.
    */
@@ -162,7 +158,7 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
     /** @var \Drupal\taxonomy\Entity\Vocabulary[] $vocabularies */
     $vocabularies = [];
     for ($i = 0; $i < 2; $i++) {
-      $vid = $this->randomMachineName();
+      $vid = mb_strtolower($this->randomMachineName());
       $vocabularies[$i] = Vocabulary::create([
         'name' => $this->randomMachineName(),
         'vid' => $vid,
@@ -173,7 +169,7 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
     // Create a taxonomy term entity reference field that saves the auto-created
     // taxonomy terms in the second vocabulary from the two that were configured
     // as targets.
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     $handler_settings = [
       'target_bundles' => [
         $vocabularies[0]->id() => $vocabularies[0]->id(),
@@ -261,7 +257,7 @@ class EntityReferenceAutoCreateTest extends BrowserTestBase {
     ]);
     $this->drupalLogin($account);
 
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     $handler_settings = [
       'auto_create' => TRUE,
     ];

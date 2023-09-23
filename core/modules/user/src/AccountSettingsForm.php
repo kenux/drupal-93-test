@@ -2,7 +2,6 @@
 
 namespace Drupal\user;
 
-use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -37,15 +36,13 @@ class AccountSettingsForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param \Drupal\Core\Config\TypedConfigManagerInterface $typedConfigManager
-   *   The typed config manager.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
    * @param \Drupal\user\RoleStorageInterface $role_storage
    *   The role storage.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, TypedConfigManagerInterface $typedConfigManager, ModuleHandlerInterface $module_handler, RoleStorageInterface $role_storage) {
-    parent::__construct($config_factory, $typedConfigManager);
+  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, RoleStorageInterface $role_storage) {
+    parent::__construct($config_factory);
     $this->moduleHandler = $module_handler;
     $this->roleStorage = $role_storage;
   }
@@ -56,7 +53,6 @@ class AccountSettingsForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('config.typed'),
       $container->get('module_handler'),
       $container->get('entity_type.manager')->getStorage('user_role')
     );
@@ -188,7 +184,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('register_admin_created.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_admin_created']['user_mail_register_admin_created_body'] = [
@@ -209,7 +204,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('register_pending_approval.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_pending_approval']['user_mail_register_pending_approval_body'] = [
@@ -230,7 +224,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('register_pending_approval_admin.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_pending_approval_admin']['register_pending_approval_admin_body'] = [
@@ -251,7 +244,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('register_no_approval_required.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_no_approval_required']['user_mail_register_no_approval_required_body'] = [
@@ -272,7 +264,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('password_reset.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_password_reset']['user_mail_password_reset_body'] = [
@@ -306,7 +297,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('status_activated.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_activated']['settings']['user_mail_status_activated_body'] = [
@@ -340,7 +330,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('status_blocked.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_blocked']['settings']['user_mail_status_blocked_body'] = [
@@ -360,7 +349,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('cancel_confirm.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_cancel_confirm']['user_mail_cancel_confirm_body'] = [
@@ -394,7 +382,6 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('Subject'),
       '#default_value' => $mail_config->get('status_canceled.subject'),
-      '#required' => TRUE,
       '#maxlength' => 180,
     ];
     $form['email_canceled']['settings']['user_mail_status_canceled_body'] = [

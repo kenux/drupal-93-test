@@ -15,6 +15,7 @@ class MigrateBlockContentTranslationTest extends MigrateDrupal6TestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
+    'aggregator',
     'book',
     'block',
     'comment',
@@ -37,7 +38,6 @@ class MigrateBlockContentTranslationTest extends MigrateDrupal6TestBase {
     $this->installEntitySchema('block_content');
     $this->installConfig(['block']);
     $this->installConfig(['block_content']);
-    $this->container->get('theme_installer')->install(['stark']);
 
     $this->executeMigrations([
       'language',

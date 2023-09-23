@@ -34,7 +34,7 @@ class BlockForm extends EntityForm {
   /**
    * The block storage.
    *
-   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   * @var \Drupal\Core\Entity\EntityStorageInterface
    */
   protected $storage;
 
@@ -237,6 +237,15 @@ class BlockForm extends EntityForm {
         continue;
       }
 
+      // Don't display the deprecated node type condition unless it has existing
+      // settings.
+      // @todo Make this more generic in
+      //   https://www.drupal.org/project/drupal/issues/2922451. Also remove
+      //   the node_type specific logic below.
+      if ($condition_id == 'node_type' && !isset($visibility[$condition_id])) {
+        continue;
+      }
+
       /** @var \Drupal\Core\Condition\ConditionInterface $condition */
       $condition = $this->manager->createInstance($condition_id, $visibility[$condition_id] ?? []);
       $form_state->set(['conditions', $condition_id], $condition);
@@ -247,23 +256,23 @@ class BlockForm extends EntityForm {
       $form[$condition_id] = $condition_form;
     }
 
-    // Disable negation for specific conditions.
-    $disable_negation = [
-      'entity_bundle:node',
-      'language',
-      'response_status',
-      'user_role',
-    ];
-    foreach ($disable_negation as $condition) {
-      if (isset($form[$condition])) {
-        $form[$condition]['negate']['#type'] = 'value';
-        $form[$condition]['negate']['#value'] = $form[$condition]['negate']['#default_value'];
-      }
+    if (isset($form['node_type'])) {
+      $form['node_type']['#title'] = $this->t('Content types (deprecated)');
+      $form['node_type']['bundles']['#title'] = $this->t('Content types');
+      $form['node_type']['negate']['#type'] = 'value';
+      $form['node_type']['negate']['#title_display'] = 'invisible';
+      $form['node_type']['negate']['#value'] = $form['node_type']['negate']['#default_value'];
     }
-
+    if (isset($form['entity_bundle:node'])) {
+      $form['entity_bundle:node']['negate']['#type'] = 'value';
+      $form['entity_bundle:node']['negate']['#title_display'] = 'invisible';
+      $form['entity_bundle:node']['negate']['#value'] = $form['entity_bundle:node']['negate']['#default_value'];
+    }
     if (isset($form['user_role'])) {
       $form['user_role']['#title'] = $this->t('Roles');
       unset($form['user_role']['roles']['#description']);
+      $form['user_role']['negate']['#type'] = 'value';
+      $form['user_role']['negate']['#value'] = $form['user_role']['negate']['#default_value'];
     }
     if (isset($form['request_path'])) {
       $form['request_path']['#title'] = $this->t('Pages');
@@ -274,6 +283,10 @@ class BlockForm extends EntityForm {
         $this->t('Show for the listed pages'),
         $this->t('Hide for the listed pages'),
       ];
+    }
+    if (isset($form['language'])) {
+      $form['language']['negate']['#type'] = 'value';
+      $form['language']['negate']['#value'] = $form['language']['negate']['#default_value'];
     }
     return $form;
   }
@@ -390,9 +403,6 @@ class BlockForm extends EntityForm {
    */
   public function getUniqueMachineName(BlockInterface $block) {
     $suggestion = $block->getPlugin()->getMachineNameSuggestion();
-    if ($block->getTheme()) {
-      $suggestion = $block->getTheme() . '_' . $suggestion;
-    }
 
     // Get all the blocks which starts with the suggested machine name.
     $query = $this->storage->getQuery();

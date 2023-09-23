@@ -15,6 +15,7 @@ use Drupal\Tests\views\Functional\ViewTestBase;
 use Drupal\views\Entity\View;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Views;
+use Drupal\views\Tests\ViewTestData;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -38,6 +39,7 @@ class StyleSerializerTest extends ViewTestBase {
   protected static $modules = [
     'views_ui',
     'entity_test',
+    'hal',
     'rest_test_views',
     'node',
     'text',
@@ -70,11 +72,10 @@ class StyleSerializerTest extends ViewTestBase {
    */
   protected $renderer;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp($import_test_views = TRUE, $modules = ['rest_test_views']): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
+
+    ViewTestData::createTestViews(static::class, ['rest_test_views']);
 
     $this->adminUser = $this->drupalCreateUser([
       'administer views',
@@ -192,6 +193,11 @@ class StyleSerializerTest extends ViewTestBase {
     }
     $this->assertCacheTags($expected_cache_tags);
     $this->assertCacheContexts(['languages:language_interface', 'theme', 'entity_test_view_grants', 'request_format']);
+
+    $expected = $serializer->serialize($entities, 'hal_json');
+    $actual_json = $this->drupalGet('test/serialize/entity', ['query' => ['_format' => 'hal_json']]);
+    $this->assertSame($expected, $actual_json, 'The expected HAL output was found.');
+    $this->assertCacheTags($expected_cache_tags);
 
     // Change the format to xml.
     $view->setDisplay('rest_export_1');
@@ -663,7 +669,7 @@ class StyleSerializerTest extends ViewTestBase {
 
     $result = Json::decode($this->drupalGet('test/serialize/node-field', ['query' => ['_format' => 'json']]));
     $this->assertEquals($node->id(), $result[0]['nid']);
-    $this->assertEquals((string) $node->body->processed, (string) $result[0]['body']);
+    $this->assertEquals($node->body->processed, $result[0]['body']);
 
     // Make sure that serialized fields are not exposed to XSS.
     $node = $this->drupalCreateNode();
@@ -721,7 +727,7 @@ class StyleSerializerTest extends ViewTestBase {
     $this->executeView($view);
 
     $result = Json::decode($this->drupalGet('test/serialize/node-field', ['query' => ['_format' => 'json']]));
-    $this->assertCount($node->body->count(), $result[2]['body']);
+    $this->assertSame($node->body->count(), count($result[2]['body']), 'Expected count of values');
     $this->assertEquals($result[2]['body'], array_map(function ($item) {
       return $item['value'];
     }, $node->body->getValue()), 'Expected raw body values found.');
@@ -807,19 +813,19 @@ class StyleSerializerTest extends ViewTestBase {
     $expected = [
       0 => [
         'nid' => $node0->id(),
-        'body' => (string) $node0->body->processed,
+        'body' => $node0->body->processed,
       ],
       1 => [
         'nid' => $node1->id(),
-        'body' => (string) $node1->body->processed,
+        'body' => $node1->body->processed,
       ],
       2 => [
         'nid' => $node2->id(),
-        'body' => (string) $node2->body->processed,
+        'body' => $node2->body->processed,
       ],
     ];
 
-    $this->assertSame($expected, $result, 'Querying a view with no exposed filter returns all nodes.');
+    $this->assertEquals($expected, $result, 'Querying a view with no exposed filter returns all nodes.');
 
     // Test that title starts with 'Node 11' query finds 2 of the 3 nodes.
     $result = Json::decode($this->drupalGet('test/serialize/node-exposed-filter', ['query' => ['_format' => 'json', 'title' => 'Node 11']]));
@@ -827,11 +833,11 @@ class StyleSerializerTest extends ViewTestBase {
     $expected = [
       0 => [
         'nid' => $node1->id(),
-        'body' => (string) $node1->body->processed,
+        'body' => $node1->body->processed,
       ],
       1 => [
         'nid' => $node2->id(),
-        'body' => (string) $node2->body->processed,
+        'body' => $node2->body->processed,
       ],
     ];
 
@@ -844,7 +850,7 @@ class StyleSerializerTest extends ViewTestBase {
       'url',
     ];
 
-    $this->assertSame($expected, $result, 'Querying a view with a starts with exposed filter on the title returns nodes whose title starts with value provided.');
+    $this->assertEquals($expected, $result, 'Querying a view with a starts with exposed filter on the title returns nodes whose title starts with value provided.');
     $this->assertCacheContexts($cache_contexts);
   }
 
@@ -870,7 +876,7 @@ class StyleSerializerTest extends ViewTestBase {
 
     // Get the names of the output.
     $json = $this->drupalGet('test/serialize/translated_entity', ['query' => ['_format' => 'json']]);
-    $decoded = $this->container->get('serializer')->decode($json, 'json');
+    $decoded = $this->container->get('serializer')->decode($json, 'hal_json');
     $names = [];
     foreach ($decoded as $item) {
       $names[] = $item['name'][0]['value'];

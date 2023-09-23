@@ -27,12 +27,7 @@ class ChainRequestPolicyTest extends UnitTestCase {
    */
   protected $request;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->policy = new ChainRequestPolicy();
     $this->request = new Request();
   }
@@ -44,7 +39,7 @@ class ChainRequestPolicyTest extends UnitTestCase {
    */
   public function testEmptyChain() {
     $result = $this->policy->check($this->request);
-    $this->assertNull($result);
+    $this->assertSame(NULL, $result);
   }
 
   /**
@@ -57,12 +52,12 @@ class ChainRequestPolicyTest extends UnitTestCase {
     $rule->expects($this->once())
       ->method('check')
       ->with($this->request)
-      ->willReturn(NULL);
+      ->will($this->returnValue(NULL));
 
     $this->policy->addPolicy($rule);
 
     $result = $this->policy->check($this->request);
-    $this->assertNull($result);
+    $this->assertSame(NULL, $result);
   }
 
   /**
@@ -76,7 +71,7 @@ class ChainRequestPolicyTest extends UnitTestCase {
     $rule->expects($this->once())
       ->method('check')
       ->with($this->request)
-      ->willReturn($return_value);
+      ->will($this->returnValue($return_value));
 
     $this->policy->addPolicy($rule);
 
@@ -113,7 +108,7 @@ class ChainRequestPolicyTest extends UnitTestCase {
       $rule->expects($this->once())
         ->method('check')
         ->with($this->request)
-        ->willReturn($return_value);
+        ->will($this->returnValue($return_value));
 
       $this->policy->addPolicy($rule);
     }
@@ -143,14 +138,14 @@ class ChainRequestPolicyTest extends UnitTestCase {
     $rule1->expects($this->once())
       ->method('check')
       ->with($this->request)
-      ->willReturn(RequestPolicyInterface::ALLOW);
+      ->will($this->returnValue(RequestPolicyInterface::ALLOW));
     $this->policy->addPolicy($rule1);
 
     $deny_rule = $this->createMock('Drupal\Core\PageCache\RequestPolicyInterface');
     $deny_rule->expects($this->once())
       ->method('check')
       ->with($this->request)
-      ->willReturn(RequestPolicyInterface::DENY);
+      ->will($this->returnValue(RequestPolicyInterface::DENY));
     $this->policy->addPolicy($deny_rule);
 
     $ignored_rule = $this->createMock('Drupal\Core\PageCache\RequestPolicyInterface');

@@ -2,12 +2,8 @@
 
 namespace Drupal\FunctionalTests\Installer;
 
-use Drupal\Core\Database\Database;
 use Drupal\Core\Routing\RoutingEvents;
 use Drupal\Core\Test\PerformanceTestRecorder;
-use Drupal\Core\Extension\ModuleUninstallValidatorException;
-
-// cspell:ignore drupalmysqldriverdatabasemysql drupalpgsqldriverdatabasepgsql
 
 /**
  * Tests the interactive installer.
@@ -25,7 +21,7 @@ class InstallerTest extends InstallerTestBase {
    * Ensures that the user page is available after installation.
    */
   public function testInstaller() {
-    $this->assertNotEquals('0', \Drupal::service('asset.query_string')->get(), 'The dummy query string should be set during install');
+    $this->assertNotNull(\Drupal::state()->get('system.css_js_query_string'), 'The dummy query string should be set during install');
     $this->assertSession()->addressEquals('user/1');
     $this->assertSession()->statusCodeEquals(200);
     // Confirm that we are logged-in after installation.
@@ -55,7 +51,7 @@ class InstallerTest extends InstallerTestBase {
   protected function setUpLanguage() {
     // Test that \Drupal\Core\Render\BareHtmlPageRenderer adds assets and
     // metatags as expected to the first page of the installer.
-    $this->assertSession()->responseContains("css/components/button.css");
+    $this->assertSession()->responseContains("core/themes/seven/css/components/buttons.css");
     $this->assertSession()->responseContains('<meta charset="utf-8" />');
 
     // Assert that the expected title is present.
@@ -90,8 +86,8 @@ class InstallerTest extends InstallerTestBase {
 
     // Assert that we use the by core supported database drivers by default and
     // not the ones from the driver_test module.
-    $this->assertSession()->elementTextEquals('xpath', '//label[@for="edit-driver-drupalmysqldriverdatabasemysql"]', 'MySQL, MariaDB, Percona Server, or equivalent');
-    $this->assertSession()->elementTextEquals('xpath', '//label[@for="edit-driver-drupalpgsqldriverdatabasepgsql"]', 'PostgreSQL');
+    $this->assertSession()->elementTextEquals('xpath', '//label[@for="edit-driver-mysql"]', 'MySQL, MariaDB, Percona Server, or equivalent');
+    $this->assertSession()->elementTextEquals('xpath', '//label[@for="edit-driver-pgsql"]', 'PostgreSQL');
 
     parent::setUpSettings();
   }
@@ -120,36 +116,6 @@ class InstallerTest extends InstallerTestBase {
 
     // Assert the title is correct and has the title suffix.
     $this->assertSession()->titleEquals('Choose language | Drupal');
-  }
-
-  /**
-   * Confirms that the installation succeeded.
-   */
-  public function testInstalled() {
-    $this->assertSession()->addressEquals('user/1');
-    $this->assertSession()->statusCodeEquals(200);
-
-    $database = Database::getConnection();
-    $module = $database->getProvider();
-    $module_handler = \Drupal::service('module_handler');
-
-    // Ensure the update module is not installed.
-    $this->assertFalse($module_handler->moduleExists('update'), 'The Update module is not installed.');
-
-    // Assert that the module that is providing the database driver has been
-    // installed.
-    $this->assertTrue($module_handler->moduleExists($module));
-
-    // The module that is providing the database driver should be uninstallable.
-    try {
-      $this->container->get('module_installer')->uninstall([$module]);
-      $this->fail("Uninstalled $module module.");
-    }
-    catch (ModuleUninstallValidatorException $e) {
-      $module_name = $module_handler->getName($module);
-      $driver = $database->driver();
-      $this->assertStringContainsString("The module '$module_name' is providing the database driver '$driver'.", $e->getMessage());
-    }
   }
 
 }

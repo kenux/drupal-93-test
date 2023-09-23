@@ -31,11 +31,9 @@ use Drupal\taxonomy\VocabularyInterface;
  *     },
  *     "route_provider" = {
  *       "html" = "Drupal\taxonomy\Entity\Routing\VocabularyRouteProvider",
- *       "permissions" = "Drupal\user\Entity\EntityPermissionsRouteProvider",
  *     }
  *   },
  *   admin_permission = "administer taxonomy",
- *   collection_permission = "access taxonomy overview",
  *   config_prefix = "vocabulary",
  *   bundle_of = "taxonomy_term",
  *   entity_keys = {
@@ -49,7 +47,6 @@ use Drupal\taxonomy\VocabularyInterface;
  *     "reset-form" = "/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/reset",
  *     "overview-form" = "/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/overview",
  *     "edit-form" = "/admin/structure/taxonomy/manage/{taxonomy_vocabulary}",
- *     "entity-permissions-form" = "/admin/structure/taxonomy/manage/{taxonomy_vocabulary}/overview/permissions",
  *     "collection" = "/admin/structure/taxonomy",
  *   },
  *   config_export = {

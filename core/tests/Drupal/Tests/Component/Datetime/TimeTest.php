@@ -83,9 +83,7 @@ class TimeTest extends TestCase {
    * @covers ::getRequestTime
    */
   public function testGetRequestTimeNoRequest() {
-    // With no request, and no global variable, we expect to get the int part
-    // of the microtime.
-    $expected = 1234567;
+    $expected = 12345678;
     unset($_SERVER['REQUEST_TIME']);
     $this->assertEquals($expected, $this->time->getRequestTime());
     $_SERVER['REQUEST_TIME'] = 23456789;

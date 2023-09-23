@@ -31,12 +31,7 @@ class DisplayPageTest extends ViewsKernelTestBase {
    *
    * @var array
    */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'views_test_data',
-  ];
+  protected static $modules = ['system', 'user', 'field', 'views_test_data'];
 
   /**
    * The router dumper to get all routes.
@@ -237,12 +232,11 @@ class DisplayPageTest extends ViewsKernelTestBase {
 
     $styles = [
       'default' => '//div[@class="views-row"]',
-      // Olivero does not use the 'views-col' class.
-      'grid' => '//div[contains(@class, "views-col") or contains(@class, "views-view-grid__item-inner")]',
+      'grid' => '//div[contains(@class, "views-col")]',
       'html_list' => '//div[@class="item-list"]//li',
     ];
 
-    $themes = ['olivero', 'stable9', 'stark', 'claro'];
+    $themes = ['bartik', 'classy', 'seven', 'stable', 'stark'];
 
     foreach ($themes as $theme) {
       \Drupal::service('theme_installer')->install([$theme]);

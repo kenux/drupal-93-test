@@ -8,9 +8,7 @@ use Drupal\views\Views;
 use Drupal\views\Entity\View;
 
 /**
- * The relationship handler for groupwise maximum queries.
- *
- * It allows a groupwise maximum of the linked in table.
+ * Relationship handler that allows a groupwise maximum of the linked in table.
  * For a definition, see:
  * http://dev.mysql.com/doc/refman/5.0/en/example-maximum-column-group-row.html
  * In lay terms, instead of joining to get all matching records in the linked
@@ -60,11 +58,6 @@ use Drupal\views\Entity\View;
  * @ViewsRelationship("groupwise_max")
  */
 class GroupwiseMax extends RelationshipPluginBase {
-
-  /**
-   * The namespace of the subquery.
-   */
-  public string $subquery_namespace;
 
   /**
    * {@inheritdoc}
@@ -331,7 +324,7 @@ class GroupwiseMax extends RelationshipPluginBase {
   protected function conditionNamespace($string) {
     $parts = explode(' = ', $string);
     foreach ($parts as &$part) {
-      if (str_contains($part, '.')) {
+      if (strpos($part, '.') !== FALSE) {
         $part = '"' . str_replace('.', $this->subquery_namespace . '".', $part);
       }
     }

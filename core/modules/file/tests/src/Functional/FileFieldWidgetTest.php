@@ -81,7 +81,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
   public function testSingleValuedWidget() {
     $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
 
     $test_file = $this->getTestFile('text');
@@ -139,7 +139,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     // Visit the node creation form, and upload 3 files for each field. Since
     // the field has cardinality of 3, ensure the "Upload" button is displayed
     // until after the 3rd file, and after that, isn't displayed. Because
-    // the last button with a given name is triggered by default, upload to the
+    // SimpleTest triggers the last button with a given name, so upload to the
     // second field first.
     $this->drupalGet("node/add/$type_name");
     foreach ([$field_name2, $field_name] as $each_field_name) {
@@ -230,7 +230,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     $this->assertSameSize($upload_files_node_creation, $node->{$field_name}, 'Node was successfully saved with multiple files.');
 
     // Try to upload exactly the allowed number of files on revision.
-    $this->uploadNodeFile($test_file, $field_name, $node->id(), 1);
+    $this->uploadNodeFile($test_file, $field_name, $node->id(), 1, [], TRUE);
     $node = $node_storage->loadUnchanged($nid);
     $this->assertCount($cardinality, $node->{$field_name}, 'Node was successfully revised to maximum number of files.');
 
@@ -250,7 +250,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     user_role_grant_permissions($this->adminUser->roles[0]->target_id, ['administer node fields']);
 
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
     $field = FieldConfig::loadByName('node', $type_name, $field_name);
     $field_id = $field->id();
@@ -260,7 +260,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     // Change the field setting to make its files private, and upload a file.
     $edit = ['settings[uri_scheme]' => 'private'];
     $this->drupalGet("admin/structure/types/manage/{$type_name}/fields/{$field_id}/storage");
-    $this->submitForm($edit, 'Save');
+    $this->submitForm($edit, 'Save field settings');
     $nid = $this->uploadNodeFile($test_file, $field_name, $type_name);
     $node = $node_storage->loadUnchanged($nid);
     $node_file = File::load($node->{$field_name}->target_id);
@@ -299,7 +299,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     // Create a new field.
     $this->addDefaultCommentField('node', 'article');
 
-    $name = $this->randomMachineName();
+    $name = strtolower($this->randomMachineName());
     $label = $this->randomMachineName();
     $storage_edit = ['settings[uri_scheme]' => 'private'];
     $this->fieldUIAddNewField('admin/structure/comment/manage/comment', $name, $label, 'file', $storage_edit);
@@ -362,7 +362,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
    */
   public function testWidgetValidation() {
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
     $this->updateFileField($field_name, $type_name, ['file_extensions' => 'txt']);
 
@@ -391,7 +391,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
    * Tests file widget element.
    */
   public function testWidgetElement() {
-    $field_name = $this->randomMachineName();
+    $field_name = mb_strtolower($this->randomMachineName());
     $html_name = str_replace('_', '-', $field_name);
     $this->createFileField($field_name, 'node', 'article', ['cardinality' => FieldStorageConfig::CARDINALITY_UNLIMITED]);
     $file = $this->getTestFile('text');
@@ -399,15 +399,19 @@ class FileFieldWidgetTest extends FileFieldTestBase {
 
     $this->drupalGet('node/add/article');
 
+    $elements = $this->xpath($xpath);
+
     // If the field has no item, the table should not be visible.
-    $this->assertSession()->elementNotExists('xpath', $xpath);
+    $this->assertCount(0, $elements);
 
     // Upload a file.
     $edit['files[' . $field_name . '_0][]'] = $this->container->get('file_system')->realpath($file->getFileUri());
     $this->submitForm($edit, "{$field_name}_0_upload_button");
 
+    $elements = $this->xpath($xpath);
+
     // If the field has at least one item, the table should be visible.
-    $this->assertSession()->elementsCount('xpath', $xpath, 1);
+    $this->assertCount(1, $elements);
 
     // Test for AJAX error when using progress bar on file field widget.
     $http_client = $this->getHttpClient();
@@ -477,7 +481,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     user_role_grant_permissions($this->adminUser->roles[0]->target_id, ['administer node fields']);
 
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
     /** @var \Drupal\Field\FieldConfigInterface $field */
     $field = FieldConfig::loadByName('node', $type_name, $field_name);
@@ -504,7 +508,7 @@ class FileFieldWidgetTest extends FileFieldTestBase {
     user_role_grant_permissions($this->adminUser->roles[0]->target_id, ['administer node fields']);
 
     $type_name = 'article';
-    $field_name = $this->randomMachineName();
+    $field_name = strtolower($this->randomMachineName());
     $this->createFileField($field_name, 'node', $type_name);
     $field = FieldConfig::loadByName('node', $type_name, $field_name);
     $field_id = $field->id();

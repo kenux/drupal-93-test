@@ -6,11 +6,8 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * Tests XSS filtering.
- *
- * @see \Drupal\Component\Utility\Xss::filter()
- * @see \Drupal\Component\Utility\UrlHelper::filterBadProtocol
- * @see \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols
+ * Confirm that \Drupal\Component\Utility\Xss::filter() and check_url() work
+ * correctly, including invalid multi-byte sequences.
  *
  * @group Common
  */
@@ -23,9 +20,6 @@ class XssUnitTest extends KernelTestBase {
    */
   protected static $modules = ['filter', 'system'];
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
@@ -36,11 +30,11 @@ class XssUnitTest extends KernelTestBase {
    */
   public function testT() {
     $text = t('Simple text');
-    $this->assertSame('Simple text', (string) $text, 't leaves simple text alone.');
+    $this->assertEquals('Simple text', $text, 't leaves simple text alone.');
     $text = t('Escaped text: @value', ['@value' => '<script>']);
-    $this->assertSame('Escaped text: &lt;script&gt;', (string) $text, 't replaces and escapes string.');
+    $this->assertEquals('Escaped text: &lt;script&gt;', $text, 't replaces and escapes string.');
     $text = t('Placeholder text: %value', ['%value' => '<script>']);
-    $this->assertSame('Placeholder text: <em class="placeholder">&lt;script&gt;</em>', (string) $text, 't replaces, escapes and themes string.');
+    $this->assertEquals('Placeholder text: <em class="placeholder">&lt;script&gt;</em>', $text, 't replaces, escapes and themes string.');
   }
 
   /**

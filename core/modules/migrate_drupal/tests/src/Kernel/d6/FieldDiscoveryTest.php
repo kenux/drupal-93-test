@@ -7,8 +7,7 @@ use Drupal\field_discovery_test\FieldDiscoveryTestClass;
 use Drupal\migrate_drupal\FieldDiscoveryInterface;
 use Drupal\Tests\migrate_drupal\Traits\FieldDiscoveryTestTrait;
 
-// cspell:ignore filefield imagefield imagelink nodelink nodereference
-// cspell:ignore selectlist spamspan userreference
+// cspell:ignore filefield imagefield imagelink nodelink selectlist spamspan
 
 /**
  * Tests FieldDiscovery service against Drupal 6.
@@ -66,7 +65,7 @@ class FieldDiscoveryTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp(): void {
+  public function setUp(): void {
     parent::setUp();
     $this->installConfig(['node']);
     $this->executeMigration('d6_node_type');
@@ -90,7 +89,6 @@ class FieldDiscoveryTest extends MigrateDrupal6TestBase {
       'field_company',
       'field_company_2',
       'field_company_3',
-      'field_company_4',
       'field_sync',
       'field_multivalue',
       'field_test_text_single_checkbox',

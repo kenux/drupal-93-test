@@ -63,10 +63,8 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
   /**
    * Stores the rendered output of the display.
    *
-   * @var array|null
-   *   Render output array, or NULL if no output.
-   *
-   * @see \Drupal\views\ViewExecutable::render()
+   * @see View::render
+   * @var string
    */
   public $output = NULL;
 
@@ -123,16 +121,6 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
    * @var array
    */
   public $display;
-
-  /**
-   * Keeps track whether the display uses exposed filters.
-   */
-  public bool $has_exposed;
-
-  /**
-   * The default display.
-   */
-  public DisplayPluginInterface $default_display;
 
   /**
    * Constructs a new DisplayPluginBase object.
@@ -192,20 +180,27 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
       unset($options['defaults']);
     }
 
-    $cid = 'views:unpack_options:' . hash('sha256', serialize([$this->options, $options])) . ':' . \Drupal::languageManager()->getCurrentLanguage()->getId();
-    if (empty(static::$unpackOptions[$cid])) {
-      $cache = \Drupal::cache('data')->get($cid);
-      if (!empty($cache->data)) {
-        $this->options = $cache->data;
+    $skip_cache = \Drupal::config('views.settings')->get('skip_cache');
+
+    if (empty($view->editing) || !$skip_cache) {
+      $cid = 'views:unpack_options:' . hash('sha256', serialize([$this->options, $options])) . ':' . \Drupal::languageManager()->getCurrentLanguage()->getId();
+      if (empty(static::$unpackOptions[$cid])) {
+        $cache = \Drupal::cache('data')->get($cid);
+        if (!empty($cache->data)) {
+          $this->options = $cache->data;
+        }
+        else {
+          $this->unpackOptions($this->options, $options);
+          \Drupal::cache('data')->set($cid, $this->options, Cache::PERMANENT, $this->view->storage->getCacheTags());
+        }
+        static::$unpackOptions[$cid] = $this->options;
       }
       else {
-        $this->unpackOptions($this->options, $options);
-        \Drupal::cache('data')->set($cid, $this->options, Cache::PERMANENT, $this->view->storage->getCacheTags());
+        $this->options = static::$unpackOptions[$cid];
       }
-      static::$unpackOptions[$cid] = $this->options;
     }
     else {
-      $this->options = static::$unpackOptions[$cid];
+      $this->unpackOptions($this->options, $options);
     }
 
     // Mark the view as changed so the user has a chance to save it.
@@ -444,6 +439,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
     // If the display cannot use a pager, then we cannot default it.
     if (!$this->usesPager()) {
       unset($sections['pager']);
+      unset($sections['items_per_page']);
     }
 
     foreach ($this->extenders as $extender) {
@@ -566,21 +562,21 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
         'contains' => [
           'type' => ['default' => 'views_query'],
           'options' => ['default' => []],
-        ],
+         ],
         'merge_defaults' => [$this, 'mergePlugin'],
       ],
       'exposed_form' => [
         'contains' => [
           'type' => ['default' => 'basic'],
           'options' => ['default' => []],
-        ],
+         ],
         'merge_defaults' => [$this, 'mergePlugin'],
       ],
       'pager' => [
         'contains' => [
           'type' => ['default' => 'mini'],
           'options' => ['default' => []],
-        ],
+         ],
         'merge_defaults' => [$this, 'mergePlugin'],
       ],
       'style' => [
@@ -783,7 +779,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
       return $this->default_display->getOption($option);
     }
 
-    if (\array_key_exists($option, $this->options)) {
+    if (isset($this->options[$option]) || array_key_exists($option, $this->options)) {
       return $this->options[$option];
     }
   }
@@ -1033,16 +1029,16 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
     }
 
     return Link::fromTextAndUrl($text, Url::fromRoute('views_ui.form_display', [
-      'js' => 'nojs',
-      'view' => $this->view->storage->id(),
-      'display_id' => $this->display['id'],
-      'type' => $section,
-    ], [
-      'attributes' => [
-        'class' => ['views-ajax-link', $class],
-        'title' => $title,
-        'id' => Html::getUniqueId('views-' . $this->display['id'] . '-' . $section),
-      ],
+        'js' => 'nojs',
+        'view' => $this->view->storage->id(),
+        'display_id' => $this->display['id'],
+        'type' => $section,
+      ], [
+        'attributes' => [
+          'class' => ['views-ajax-link', $class],
+          'title' => $title,
+          'id' => Html::getUniqueId('views-' . $this->display['id'] . '-' . $section),
+        ],
     ]))->toString();
   }
 
@@ -1682,7 +1678,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
         if (empty($style)) {
           $form['#title'] .= $this->t('Row style options');
         }
-        $plugin = $this->getPlugin(empty($style) ? 'row' : 'style');
+        $plugin = $this->getPlugin(empty($style) ? 'row' : 'style', $name);
         if ($plugin) {
           $form[$section] = [
             '#tree' => TRUE,
@@ -1735,7 +1731,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
         ];
 
         $options = [];
-        $optgroup_arguments = (string) $this->t('Arguments');
+        $optgroup_arguments = (string) t('Arguments');
         foreach ($this->view->display_handler->getHandlers('argument') as $arg => $handler) {
           $options[$optgroup_arguments]["{{ arguments.$arg }}"] = $this->t('@argument title', ['@argument' => $handler->adminLabel()]);
           $options[$optgroup_arguments]["{{ raw_arguments.$arg }}"] = $this->t('@argument input', ['@argument' => $handler->adminLabel()]);
@@ -1918,7 +1914,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
 
     // Validate plugin options. Every section with "_options" in it, belongs to
     // a plugin type, like "style_options".
-    if (str_contains($section, '_options')) {
+    if (strpos($section, '_options') !== FALSE) {
       $plugin_type = str_replace('_options', '', $section);
       // Load the plugin and let it handle the validation.
       if ($plugin = $this->getPlugin($plugin_type)) {
@@ -2130,7 +2126,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
   protected function getMoreUrl() {
     $path = $this->getOption('link_url');
 
-    // Return the display URL if there is no custom URL.
+    // Return the display URL if there is no custom url.
     if ($this->getOption('link_display') !== 'custom_url' || empty($path)) {
       return $this->view->getUrl(NULL, $this->display['id']);
     }
@@ -2155,7 +2151,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
     $path = $options['path'];
     unset($options['path']);
 
-    // Create URL.
+    // Create url.
     // @todo Views should expect and store a leading /. See:
     //   https://www.drupal.org/node/2423913
     $url = UrlHelper::isExternal($path) ? Url::fromUri($path, $options) : Url::fromUserInput('/' . ltrim($path, '/'), $options);
@@ -2236,7 +2232,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
     $element['#feed_icons'] = !empty($view->feedIcons) ? $view->feedIcons : [];
 
     if ($view->display_handler->renderPager()) {
-      $exposed_input = $view->getExposedInput();
+      $exposed_input = $view->exposed_raw_input ?? NULL;
       $element['#pager'] = $view->renderPager($exposed_input);
     }
 
@@ -2524,14 +2520,9 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
     // Check for missing relationships.
     $relationships = array_keys($this->getHandlers('relationship'));
     foreach (ViewExecutable::getHandlerTypes() as $type => $handler_type_info) {
-      foreach ($this->getHandlers($type) as $handler) {
+      foreach ($this->getHandlers($type) as $handler_id => $handler) {
         if (!empty($handler->options['relationship']) && $handler->options['relationship'] != 'none' && !in_array($handler->options['relationship'], $relationships)) {
-          $errors[] = $this->t('The %relationship_name relationship used in %handler_type %handler is not present in the %display_name display.', [
-            '%relationship_name' => $handler->options['relationship'],
-            '%handler_type' => $handler_type_info['lstitle'],
-            '%handler' => $handler->adminLabel(),
-            '%display_name' => $this->display['display_title'],
-          ]);
+          $errors[] = $this->t('The %handler_type %handler uses a relationship that has been removed.', ['%handler_type' => $handler_type_info['lstitle'], '%handler' => $handler->adminLabel()]);
         }
       }
     }
@@ -2632,7 +2623,7 @@ abstract class DisplayPluginBase extends PluginBase implements DisplayPluginInte
   public function viewExposedFormBlocks() {
     // Avoid interfering with the admin forms.
     $route_name = \Drupal::routeMatch()->getRouteName();
-    if (str_starts_with($route_name, 'views_ui.')) {
+    if (strpos($route_name, 'views_ui.') === 0) {
       return;
     }
     $this->view->initHandlers();

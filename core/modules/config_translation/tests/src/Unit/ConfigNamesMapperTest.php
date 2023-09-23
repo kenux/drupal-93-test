@@ -47,9 +47,9 @@ class ConfigNamesMapperTest extends UnitTestCase {
   protected $localeConfigManager;
 
   /**
-   * The typed configuration manager.
+   * The locale configuration manager.
    *
-   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit\Framework\MockObject\MockObject
+   * @var \Drupal\locale\LocaleConfigManager|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $typedConfigManager;
 
@@ -95,12 +95,7 @@ class ConfigNamesMapperTest extends UnitTestCase {
    */
   protected $eventDispatcher;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->routeProvider = $this->createMock('Drupal\Core\Routing\RouteProviderInterface');
 
     $this->pluginDefinition = [
@@ -130,7 +125,7 @@ class ConfigNamesMapperTest extends UnitTestCase {
       ->expects($this->any())
       ->method('getRouteByName')
       ->with('system.site_information_settings')
-      ->willReturn($this->baseRoute);
+      ->will($this->returnValue($this->baseRoute));
 
     $this->languageManager = $this->createMock('Drupal\Core\Language\LanguageManagerInterface');
 
@@ -387,12 +382,12 @@ class ConfigNamesMapperTest extends UnitTestCase {
    */
   public function testPopulateFromRouteMatch() {
     // Make sure the language code is not set initially.
-    $this->assertNull($this->configNamesMapper->getInternalLangcode());
+    $this->assertSame(NULL, $this->configNamesMapper->getInternalLangcode());
 
     // Test that an empty request does not set the language code.
     $route_match = new RouteMatch('example', new Route('/test/{langcode}'));
     $this->configNamesMapper->populateFromRouteMatch($route_match);
-    $this->assertNull($this->configNamesMapper->getInternalLangcode());
+    $this->assertSame(NULL, $this->configNamesMapper->getInternalLangcode());
 
     // Test that a request with a 'langcode' attribute sets the language code.
     $route_match = new RouteMatch('example', new Route('/test/{langcode}'), ['langcode' => 'xx']);
@@ -402,7 +397,7 @@ class ConfigNamesMapperTest extends UnitTestCase {
     // Test that the language code gets unset with the wrong request.
     $route_match = new RouteMatch('example', new Route('/test/{langcode}'));
     $this->configNamesMapper->populateFromRouteMatch($route_match);
-    $this->assertNull($this->configNamesMapper->getInternalLangcode());
+    $this->assertSame(NULL, $this->configNamesMapper->getInternalLangcode());
   }
 
   /**

@@ -3,15 +3,11 @@
 namespace Drupal\field_ui\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\TempStore\PrivateTempStore;
-use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field_ui\FieldUI;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -27,34 +23,6 @@ class FieldStorageConfigEditForm extends EntityForm {
    * @var \Drupal\field\FieldStorageConfigInterface
    */
   protected $entity;
-
-  /**
-   * FieldStorageConfigEditForm constructor.
-   *
-   * @param \Drupal\Core\TypedData\TypedDataManagerInterface $typedDataManager
-   *   The typed data manager.
-   * @param \Drupal\Core\TempStore\PrivateTempStore|null $tempStore
-   *   The private tempstore.
-   */
-  public function __construct(
-    protected TypedDataManagerInterface $typedDataManager,
-    protected ?PrivateTempStore $tempStore = NULL,
-  ) {
-    if ($this->tempStore === NULL) {
-      @trigger_error('Calling FieldStorageConfigEditForm::__construct() without the $tempStore argument is deprecated in drupal:10.2.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3383720', E_USER_DEPRECATED);
-      $this->tempStore = \Drupal::service('tempstore.private')->get('field_ui');
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('typed_data_manager'),
-      $container->get('tempstore.private')->get('field_ui')
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -96,12 +64,17 @@ class FieldStorageConfigEditForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $temp_storage = $this->tempStore->get($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName());
     $form = parent::form($form, $form_state);
 
-    $field_label = $this->entity->isNew() ? $temp_storage['field_config_values']['label'] : $form_state->get('field_config')->label();
+    $field_label = $form_state->get('field_config')->label();
     $form['#title'] = $field_label;
-    $form['#prefix'] = '<p>' . $this->t('These settings apply to the %field field everywhere it is used. Some also impact the way that data is stored and cannot be changed once data has been created.', ['%field' => $field_label]) . '</p>';
+    $form['#prefix'] = '<p>' . $this->t('These settings apply to the %field field everywhere it is used. These settings impact the way that data is stored in the database and cannot be changed once data has been created.', ['%field' => $field_label]) . '</p>';
+
+    // See if data already exists for this field.
+    // If so, prevent changes to the field settings.
+    if ($this->entity->hasData()) {
+      $form['#prefix'] = '<div class="messages messages--error">' . $this->t('There is data for this field in the database. The field settings can no longer be changed.') . '</div>' . $form['#prefix'];
+    }
 
     // Add settings provided by the field module. The field module is
     // responsible for not returning settings that cannot be changed if
@@ -118,18 +91,7 @@ class FieldStorageConfigEditForm extends EntityForm {
       'entity_id' => NULL,
     ];
     $entity = _field_create_entity_from_ids($ids);
-    if (!$this->entity->isNew()) {
-      $items = $entity->get($this->entity->getName());
-    }
-    else {
-      // Create a temporary field config so that we can access the field
-      // definition.
-      $field_config = $this->entityTypeManager->getStorage('field_config')->create([
-        ...$temp_storage['field_config_values'],
-        'field_storage' => $temp_storage['field_storage'],
-      ]);
-      $items = $this->typedDataManager->create($field_config, name: $this->entity->getName(), parent: EntityAdapter::createFromEntity($entity));
-    }
+    $items = $entity->get($this->entity->getName());
     $item = $items->first() ?: $items->appendItem();
     $form['settings'] += $item->storageSettingsForm($form, $form_state, $this->entity->hasData());
 
@@ -208,7 +170,7 @@ class FieldStorageConfigEditForm extends EntityForm {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $elements = parent::actions($form, $form_state);
-    $elements['submit']['#value'] = $this->entity->isNew() ? $this->t('Continue') : $this->t('Save');
+    $elements['submit']['#value'] = $this->t('Save field settings');
 
     return $elements;
   }
@@ -241,7 +203,7 @@ class FieldStorageConfigEditForm extends EntityForm {
         ->count()
         ->execute();
       if ($entities_with_higher_delta) {
-        $form_state->setError($element['cardinality_number'], $this->formatPlural($entities_with_higher_delta, 'There is @count entity with @delta or more values in this field, so the allowed number of values cannot be set to @allowed.', 'There are @count entities with @delta or more values in this field, so the allowed number of values cannot be set to @allowed.', ['@delta' => $form_state->getValue('cardinality') + 1, '@allowed' => $form_state->getValue('cardinality')]));
+        $form_state->setError($element['cardinality_number'], $this->formatPlural($entities_with_higher_delta, 'There is @count entity with @delta or more values in this field.', 'There are @count entities with @delta or more values in this field.', ['@delta' => $form_state->getValue('cardinality') + 1]));
       }
     }
   }
@@ -262,21 +224,12 @@ class FieldStorageConfigEditForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    // Save field storage entity values in tempstore.
-    if ($this->entity->isNew()) {
-      $temp_storage = $this->tempStore->get($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName());
-      $field_label = $temp_storage['field_config_values']['label'];
-      $temp_storage['field_storage'] = $this->entity;
-      $this->tempStore->set($this->entity->getTargetEntityTypeId() . ':' . $this->entity->getName(), $temp_storage);
-    }
+    $field_label = $form_state->get('field_config')->label();
     try {
-      if (!$this->entity->isNew()) {
-        $field_label = $form_state->get('field_config')->label();
-        $this->entity->save();
-        $this->messenger()->addMessage($this->t('Your settings have been saved.'));
-      }
+      $this->entity->save();
+      $this->messenger()->addStatus($this->t('Updated field %label field settings.', ['%label' => $field_label]));
       $request = $this->getRequest();
-      if (($destinations = $request->query->all('destinations')) && $next_destination = FieldUI::getNextDestination($destinations)) {
+      if (($destinations = $request->query->get('destinations')) && $next_destination = FieldUI::getNextDestination($destinations)) {
         $request->query->remove('destinations');
         $form_state->setRedirectUrl($next_destination);
       }

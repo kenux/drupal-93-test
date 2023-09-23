@@ -59,7 +59,7 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
    *
    * @var \Drupal\Core\Session\AccountInterface
    */
-  protected $parentMember;
+  protected $parent_member;
 
   /**
    * The EntityFormDisplay entity used for testing.
@@ -89,11 +89,11 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
     $this->anon
       ->expects($this->any())
       ->method('hasPermission')
-      ->willReturn(FALSE);
+      ->will($this->returnValue(FALSE));
     $this->anon
       ->expects($this->any())
       ->method('id')
-      ->willReturn(0);
+      ->will($this->returnValue(0));
 
     $this->member = $this->createMock(AccountInterface::class);
     $this->member
@@ -105,24 +105,24 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
     $this->member
       ->expects($this->any())
       ->method('id')
-      ->willReturn(2);
+      ->will($this->returnValue(2));
 
-    $this->parentMember = $this->createMock(AccountInterface::class);
-    $this->parentMember
+    $this->parent_member = $this->createMock(AccountInterface::class);
+    $this->parent_member
       ->expects($this->any())
       ->method('hasPermission')
       ->willReturnMap([
         ['Llama', TRUE],
       ]);
-    $this->parentMember
+    $this->parent_member
       ->expects($this->any())
       ->method('id')
-      ->willReturn(3);
+      ->will($this->returnValue(3));
 
     $entity_form_display_entity_type = $this->createMock(ConfigEntityTypeInterface::class);
     $entity_form_display_entity_type->expects($this->any())
       ->method('getAdminPermission')
-      ->willReturn('Llama');
+      ->will($this->returnValue('Llama'));
     $entity_form_display_entity_type
       ->expects($this->any())
       ->method('getKey')
@@ -131,7 +131,7 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
       ]);
     $entity_form_display_entity_type->expects($this->any())
       ->method('entityClassImplements')
-      ->willReturn(TRUE);
+      ->will($this->returnValue(TRUE));
     $entity_form_display_entity_type->expects($this->any())
       ->method('getConfigPrefix')
       ->willReturn('');
@@ -139,8 +139,12 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
     $this->moduleHandler = $this->createMock(ModuleHandlerInterface::class);
     $this->moduleHandler
       ->expects($this->any())
+      ->method('getImplementations')
+      ->will($this->returnValue([]));
+    $this->moduleHandler
+      ->expects($this->any())
       ->method('invokeAll')
-      ->willReturn([]);
+      ->will($this->returnValue([]));
 
     $storage_access_control_handler = new EntityFormDisplayAccessControlHandler($entity_form_display_entity_type);
     $storage_access_control_handler->setModuleHandler($this->moduleHandler);
@@ -161,12 +165,12 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
     $entity_type_manager
       ->expects($this->any())
       ->method('getDefinition')
-      ->willReturn($entity_form_display_entity_type);
+      ->will($this->returnValue($entity_form_display_entity_type));
 
     $entity_field_manager = $this->createMock(EntityFieldManagerInterface::class);
     $entity_field_manager->expects($this->any())
       ->method('getFieldDefinitions')
-      ->willReturn([]);
+      ->will($this->returnValue([]));
 
     $container = new Container();
     $container->set('entity_type.manager', $entity_type_manager);
@@ -216,7 +220,7 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
   public function testAccess() {
     $this->assertAllowOperations([], $this->anon);
     $this->assertAllowOperations(['view', 'update', 'delete'], $this->member);
-    $this->assertAllowOperations(['view', 'update', 'delete'], $this->parentMember);
+    $this->assertAllowOperations(['view', 'update', 'delete'], $this->parent_member);
 
     $this->entity->enforceIsNew(TRUE)->save();
     // Unfortunately, EntityAccessControlHandler has a static cache, which we
@@ -225,7 +229,7 @@ class EntityFormDisplayAccessControlHandlerTest extends UnitTestCase {
 
     $this->assertAllowOperations([], $this->anon);
     $this->assertAllowOperations(['view', 'update'], $this->member);
-    $this->assertAllowOperations(['view', 'update'], $this->parentMember);
+    $this->assertAllowOperations(['view', 'update'], $this->parent_member);
   }
 
 }

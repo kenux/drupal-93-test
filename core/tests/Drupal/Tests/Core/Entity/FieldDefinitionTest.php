@@ -51,8 +51,6 @@ class FieldDefinitionTest extends UnitTestCase {
    * {@inheritdoc}
    */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->fieldType = $this->randomMachineName();
     $this->fieldTypeDefinition = [
       'id' => $this->fieldType,
@@ -207,7 +205,7 @@ class FieldDefinitionTest extends UnitTestCase {
       ->getMock();
     $data_definition->expects($this->any())
       ->method('getClass')
-      ->willReturn('Drupal\Core\Field\FieldItemBase');
+      ->will($this->returnValue('Drupal\Core\Field\FieldItemBase'));
     $definition->setItemDefinition($data_definition);
 
     // Set default value only with a literal.
@@ -301,7 +299,7 @@ class FieldDefinitionTest extends UnitTestCase {
     $definition = $this->initializeFieldUsingFactory($factory_name);
     // setDefaultValueCallback returns $this.
     $this->assertSame($definition, $definition->setDefaultValueCallback(NULL));
-    $this->assertNull($definition->getDefaultValueCallback());
+    $this->assertSame(NULL, $definition->getDefaultValueCallback());
   }
 
   /**
@@ -387,7 +385,6 @@ class FieldDefinitionTest extends UnitTestCase {
         $definition->setFieldStorageDefinition($this->storageDefinition);
         return $definition;
     }
-    throw new \InvalidArgumentException("Invalid factory name '$factory_name' passed to " . __METHOD__);
   }
 
 }

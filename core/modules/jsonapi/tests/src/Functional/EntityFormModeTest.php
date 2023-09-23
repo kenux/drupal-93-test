@@ -10,7 +10,7 @@ use Drupal\Core\Url;
  *
  * @group jsonapi
  */
-class EntityFormModeTest extends ConfigEntityResourceTestBase {
+class EntityFormModeTest extends ResourceTestBase {
 
   /**
    * {@inheritdoc}
@@ -55,7 +55,6 @@ class EntityFormModeTest extends ConfigEntityResourceTestBase {
     $entity_form_mode = EntityFormMode::create([
       'id' => 'user.test',
       'label' => 'Test',
-      'description' => '',
       'targetEntityType' => 'user',
     ]);
     $entity_form_mode->save();
@@ -92,7 +91,6 @@ class EntityFormModeTest extends ConfigEntityResourceTestBase {
               'user',
             ],
           ],
-          'description' => '',
           'label' => 'Test',
           'langcode' => 'en',
           'status' => TRUE,
@@ -108,7 +106,6 @@ class EntityFormModeTest extends ConfigEntityResourceTestBase {
    */
   protected function getPostDocument() {
     // @todo Update in https://www.drupal.org/node/2300677.
-    return [];
   }
 
 }

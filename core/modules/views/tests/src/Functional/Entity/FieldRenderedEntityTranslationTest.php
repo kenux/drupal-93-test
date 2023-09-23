@@ -26,7 +26,7 @@ class FieldRenderedEntityTranslationTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected $defaultTheme = 'starterkit_theme';
+  protected $defaultTheme = 'classy';
 
   /**
    * {@inheritdoc}
@@ -43,14 +43,14 @@ class FieldRenderedEntityTranslationTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
-    parent::setUp($import_test_views, $modules);
+  protected function setUp($import_test_views = TRUE): void {
+    parent::setUp($import_test_views);
 
     $this->entityTypeManager = $this->container->get('entity_type.manager');
 
     $node_type = $this->entityTypeManager->getStorage('node_type')->create([
       'type' => 'article',
-      'name' => 'Article',
+      'label' => 'Article',
     ]);
     $node_type->save();
 

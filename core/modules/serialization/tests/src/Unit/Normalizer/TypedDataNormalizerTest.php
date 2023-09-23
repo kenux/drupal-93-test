@@ -25,12 +25,7 @@ class TypedDataNormalizerTest extends UnitTestCase {
    */
   protected $typedData;
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
-    parent::setUp();
-
     $this->normalizer = new TypedDataNormalizer();
     $this->typedData = $this->createMock('Drupal\Core\TypedData\TypedDataInterface');
   }
@@ -50,7 +45,7 @@ class TypedDataNormalizerTest extends UnitTestCase {
   public function testNormalize() {
     $this->typedData->expects($this->once())
       ->method('getValue')
-      ->willReturn('test');
+      ->will($this->returnValue('test'));
 
     $this->assertEquals('test', $this->normalizer->normalize($this->typedData));
   }

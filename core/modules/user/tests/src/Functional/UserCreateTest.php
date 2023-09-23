@@ -31,7 +31,8 @@ class UserCreateTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
-   * Tests user creation and display from the administration interface.
+   * Create a user through the administration interface and ensure that it
+   * displays in the user list.
    */
   public function testUserAdd() {
     $user = $this->drupalCreateUser(['administer users']);
@@ -63,7 +64,7 @@ class UserCreateTest extends BrowserTestBase {
       'description' => 'Your virtual face or picture.',
       'required' => FALSE,
       'settings' => [
-        'file_extensions' => 'png gif jpg jpeg webp',
+        'file_extensions' => 'png gif jpg jpeg',
         'file_directory' => 'pictures',
         'max_filesize' => '30 KB',
         'alt_field' => 0,

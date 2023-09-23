@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -59,13 +58,11 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $roles = Role::loadMultiple();
-    unset($roles[RoleInterface::ANONYMOUS_ID]);
+    $roles = user_role_names(TRUE);
     unset($roles[RoleInterface::AUTHENTICATED_ID]);
-    $roles = array_map(fn(RoleInterface $role) => $role->label(), $roles);
     $form['rid'] = [
       '#type' => 'radios',
-      '#title' => $this->t('Role'),
+      '#title' => t('Role'),
       '#options' => $roles,
       '#default_value' => $this->configuration['rid'],
       '#required' => TRUE,

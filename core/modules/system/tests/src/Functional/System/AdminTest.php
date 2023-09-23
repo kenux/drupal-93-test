@@ -31,16 +31,13 @@ class AdminTest extends BrowserTestBase {
    *
    * @var array
    */
-  protected static $modules = ['locale', 'menu_test'];
+  protected static $modules = ['locale'];
 
   /**
    * {@inheritdoc}
    */
   protected $defaultTheme = 'stark';
 
-  /**
-   * {@inheritdoc}
-   */
   protected function setUp(): void {
     // testAdminPages() requires Locale module.
     parent::setUp();
@@ -156,7 +153,7 @@ class AdminTest extends BrowserTestBase {
 
     // The front page defaults to 'user/login', which redirects to 'user/{user}'
     // for authenticated users. We cannot use '<front>', since this does not
-    // match the redirected URL.
+    // match the redirected url.
     $frontpage_url = 'user/' . $this->adminUser->id();
 
     $this->drupalGet('admin/compact/on');
@@ -180,19 +177,6 @@ class AdminTest extends BrowserTestBase {
     $this->assertNull($session->getCookie('Drupal.visitor.admin_compact_mode'), 'Compact mode remains off after a repeat call.');
     $this->drupalGet('');
     $this->assertNull($session->getCookie('Drupal.visitor.admin_compact_mode'), 'Compact mode persists off new requests.');
-  }
-
-  /**
-   * Tests admin config page blocks without descriptions.
-   */
-  public function testConfigBlocksDescription(): void {
-    // Go to Config administration page.
-    $this->drupalGet('admin/config');
-    $this->assertSession()->statusCodeEquals(200);
-    // Validates the content block without description.
-    $this->assertSession()->pageTextContains('Test custom admin block without description');
-    // Validates an empty description block.
-    $this->assertSession()->elementNotExists('xpath', '//dd[@class="list-group__description"][not(text())]');
   }
 
 }
