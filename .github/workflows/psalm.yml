@@ -34,7 +34,7 @@ jobs:
           composer update
           composer update --lock
           php -v
-          apt-get search php8.1-gd
+          apt-get install php8.1-gd
         continue-on-error: true
 
       - name: Psalm Security Scan
