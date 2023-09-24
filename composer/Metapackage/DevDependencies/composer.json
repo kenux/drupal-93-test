@@ -26,6 +26,7 @@
         "symfony/finder": "^4.4",
         "symfony/lock": "^4.4",
         "symfony/phpunit-bridge": "^5.4",
-        "symfony/var-dumper": "^5.4"
+        "symfony/var-dumper": "^5.4",
+        "vimeo/psalm": "*"
     }
 }

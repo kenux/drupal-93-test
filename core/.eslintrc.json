@@ -28,11 +28,11 @@
     "CKEditor5": true,
     "tabbable": true
   },
-  "settings": {
-    "react": {
-      "version": "detect"
-    }
-  },
+  // "settings": {
+  //   "react": {
+  //     "version": "detect"
+  //   }
+  // },
   "rules": {
     "prettier/prettier": "error",
     "consistent-return": ["off"],
